@@ -9,6 +9,7 @@ import customtkinter as ctk
 from tkinter import messagebox, scrolledtext, colorchooser, filedialog
 import requests
 import json
+import copy
 import threading
 import time
 from datetime import datetime
@@ -744,6 +745,14 @@ class LLMMessenger:
         self.current_session_bias = ""
         self.bias_auto_save_timer = None  # Timer für Auto-Save BIAS
         
+        # Debug-Variablen für letzte Model-Eingabe
+        self.last_model_input = {
+            "model": None,
+            "message": None,
+            "history": None,
+            "timestamp": None
+        }
+        
         # Sessions-Verzeichnis früh initialisieren
         self.sessions_dir = os.path.join(os.getcwd(), "sessions")
         if not os.path.exists(self.sessions_dir):
@@ -1350,6 +1359,19 @@ class LLMMessenger:
         )
         folder_btn.pack(pady=2)
         
+        # Letzte Model-Eingabe anzeigen Button
+        model_input_btn = ctk.CTkButton(
+            debug_frame,
+            text="🤖 Letzte Model-Eingabe",
+            command=self.show_last_model_input,
+            height=25,
+            font=("Arial", 9),
+            fg_color="#8B4A87",
+            hover_color="#9B5A97",
+            width=240
+        )
+        model_input_btn.pack(pady=2)
+        
         # Chat-Historie löschen Button
         clear_history_btn = ctk.CTkButton(
             debug_frame,
@@ -1544,6 +1566,120 @@ class LLMMessenger:
             width=100
         )
         close_btn.pack(pady=10)
+
+    def show_last_model_input(self):
+        """Zeigt die letzte Model-Eingabe in einem Debug-Dialog"""
+        if not self.last_model_input or not self.last_model_input.get("timestamp"):
+            messagebox.showinfo(
+                "Keine Model-Eingabe", 
+                "Noch keine Nachricht an das Model gesendet.\n\nSenden Sie zuerst eine Nachricht, um die Model-Eingabe zu sehen."
+            )
+            return
+        
+        # Erstelle Debug-Text
+        debug_text = "🤖 LETZTE MODEL-EINGABE\n" + "="*60 + "\n\n"
+        
+        # Zeitstempel
+        timestamp = self.last_model_input.get("timestamp", "Unbekannt")
+        debug_text += f"⏰ Zeitstempel: {timestamp}\n"
+        
+        # Model
+        model = self.last_model_input.get("model", "Unbekannt")
+        debug_text += f"🎯 Model: {model}\n"
+        
+        # BIAS-Status prüfen
+        history = self.last_model_input.get("history", [])
+        if history is None:
+            history = []
+        
+        has_bias = len(history) > 0 and history[0].get("role") == "system"
+        if has_bias:
+            bias_content = history[0].get("content", "")
+            debug_text += f"🎯 BIAS aktiv: {bias_content[:50]}{'...' if len(bias_content) > 50 else ''}\n"
+        else:
+            debug_text += f"❌ Kein BIAS gefunden in der gespeicherten History\n"
+        debug_text += "\n"
+        
+        # Aktuelle Nachricht
+        message = self.last_model_input.get("message", "")
+        debug_text += f"💬 Aktuelle Nachricht:\n{'-'*40}\n{message}\n{'-'*40}\n\n"
+        
+        # Chat-History analysieren (nutze die bereits geprüfte history Variable)
+        debug_text += f"📜 Chat-History ({len(history)} Einträge):\n{'-'*40}\n"
+        
+        if len(history) == 0:
+            debug_text += "❌ Keine History-Einträge gefunden!\n"
+        
+        for i, entry in enumerate(history):
+            role = entry.get("role", "unknown")
+            content = entry.get("content", "")
+            
+            # Rolle-Icons
+            role_icon = {
+                "system": "⚙️",
+                "user": "👤", 
+                "assistant": "🤖"
+            }.get(role, "❓")
+            
+            # Spezielle BIAS-Kennzeichnung für System-Nachrichten
+            bias_marker = ""
+            if role == "system" and i == 0:
+                bias_marker = " [BIAS] 🎯"
+            
+            # Kürze lange Inhalte
+            if len(content) > 200:
+                content_preview = content[:200] + "...\n[GEKÜRZT - Original hat " + str(len(content)) + " Zeichen]"
+            else:
+                content_preview = content
+                
+            debug_text += f"{i+1}. {role_icon} {role.upper()}{bias_marker}:\n{content_preview}\n\n"
+        
+        debug_text += f"{'-'*40}\n"
+        debug_text += f"💡 Hinweis: System-Nachrichten am Anfang enthalten meist den BIAS."
+        
+        # Zeige Debug-Info in einem Dialog
+        debug_dialog = ctk.CTkToplevel(self.root)
+        debug_dialog.title("🤖 Letzte Model-Eingabe")
+        debug_dialog.geometry("700x600")
+        debug_dialog.transient(self.root)
+        debug_dialog.grab_set()
+        
+        # Scrollbares Text-Widget für Debug-Ausgabe
+        debug_textbox = ctk.CTkTextbox(
+            debug_dialog,
+            font=("Consolas", 10),
+            wrap="word"
+        )
+        debug_textbox.pack(fill="both", expand=True, padx=10, pady=10)
+        debug_textbox.insert("1.0", debug_text)
+        debug_textbox.configure(state="disabled")
+        
+        # Button-Frame
+        button_frame = ctk.CTkFrame(debug_dialog)
+        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        
+        # Close-Button
+        close_btn = ctk.CTkButton(
+            button_frame,
+            text="Schließen",
+            command=debug_dialog.destroy,
+            width=100
+        )
+        close_btn.pack(side="right", padx=5)
+        
+        # Copy-Button für Zwischenablage
+        def copy_to_clipboard():
+            debug_dialog.clipboard_clear()
+            debug_dialog.clipboard_append(debug_text)
+            self.console_print("📋 Model-Eingabe in Zwischenablage kopiert", "success")
+        
+        copy_btn = ctk.CTkButton(
+            button_frame,
+            text="📋 Kopieren",
+            command=copy_to_clipboard,
+            width=100
+        )
+        copy_btn.pack(side="right", padx=5)
 
     def open_sessions_folder(self):
         """Öffnet das Sessions-Verzeichnis im Windows Explorer"""
@@ -1761,6 +1897,27 @@ class LLMMessenger:
         except Exception as e:
             self.console_print(f"❌ Fehler beim Laden der Sessions: {e}", "error")
 
+    def calculate_session_word_count(self, session_data):
+        """Berechnet die Gesamtanzahl der Wörter in einer Session"""
+        total_words = 0
+        messages = session_data.get("messages", [])
+        
+        for message in messages:
+            content = message.get("message", "")
+            if isinstance(content, str) and content.strip():
+                # Einfache aber robuste Wort-Zählung
+                # Teile bei Whitespace und filtere leere Strings
+                words = [word for word in content.split() if word.strip()]
+                total_words += len(words)
+        
+        # BIAS auch mitzählen falls vorhanden
+        bias = session_data.get("bias", "")
+        if bias and bias.strip():
+            bias_words = [word for word in bias.split() if word.strip()]
+            total_words += len(bias_words)
+        
+        return total_words
+
     def update_session_list(self):
         """Aktualisiert die Session-Liste in der UI"""
         if not hasattr(self, 'session_listbox'):
@@ -1792,18 +1949,22 @@ class LLMMessenger:
             model_name = session_data.get("model", "Kein Model")
             model_name = model_name[:12] if model_name else "Kein Model"
             
+            # Token/Wort-Anzahl für diese Session berechnen
+            word_count = self.calculate_session_word_count(session_data)
+            word_display = f"{word_count}W" if word_count < 1000 else f"{word_count//1000:.1f}kW"
+            
             # Session-Container für Name und Buttons
             session_container = ctk.CTkFrame(self.session_listbox)
             session_container.pack(fill="x", pady=2)
             
             # Session-Button mit Namen
-            button_text = f"📝 {session_name}\n📅 {date_str}\n💬 {msg_count} Msg | 🤖 {model_name}"
+            button_text = f"📝 {session_name}\n📅 {date_str}\n💬 {msg_count} Msg | 🤖 {model_name} | 📊 {word_display}"
             
             session_btn = ctk.CTkButton(
                 session_container,
                 text=button_text,
                 command=lambda sid=session_id: self.load_session(sid),
-                height=65,  
+                height=75,  # Etwas höher für mehr Text
                 font=("Arial", 9),
                 anchor="w",
                 width=280  # Etwas schmaler für Rename-Button
@@ -1816,7 +1977,7 @@ class LLMMessenger:
                 text="✏️",
                 command=lambda sid=session_id: self.rename_session(sid),
                 width=30,
-                height=65,
+                height=75,  # Gleiche Höhe wie Session-Button
                 font=("Arial", 12),
                 fg_color="#4A4A4A",
                 hover_color="#5A5A5A"
@@ -1943,7 +2104,11 @@ class LLMMessenger:
             else:
                 date_str = created_date
             
-            self.current_session_label.configure(text=f"📝 {session_name}\nID: {self.current_session_id[:8]}...\nErstellt: {date_str}")
+            # Wort-Anzahl für aktuelle Session berechnen
+            word_count = self.calculate_session_word_count(session_data)
+            word_display = f"{word_count}W" if word_count < 1000 else f"{word_count//1000:.1f}kW"
+            
+            self.current_session_label.configure(text=f"📝 {session_name}\nID: {self.current_session_id[:8]}...\nErstellt: {date_str}\n📊 {word_display}")
             
             # Model Info - handle None values correctly
             model_info = session_data.get("model", None)
@@ -2297,16 +2462,16 @@ class LLMMessenger:
         )
         self.stop_btn.pack(side="right", padx=(0, 10), pady=10)
         
-        # Export Button
-        self.export_btn = ctk.CTkButton(
+        # Button um die letzte an das Modell gesendete Eingabe anzuzeigen (Debug)
+        self.show_last_input_btn = ctk.CTkButton(
             self.input_frame,
-            text="📄 Export",
-            command=self.export_session,
-            width=80,
+            text="🔎 Letzte Model-Eingabe",
+            command=self.show_last_model_input,
+            width=160,
             fg_color="#4a4a4a",
             hover_color="#5a5a5a"
         )
-        self.export_btn.pack(side="right", padx=(0, 5), pady=10)
+        self.show_last_input_btn.pack(side="right", padx=(0, 5), pady=10)
         
         # Keine automatische Session-Erstellung beim Start mehr
     
@@ -3078,6 +3243,19 @@ class LLMMessenger:
                 if session_bias:
                     # BIAS als System-Nachricht am Anfang hinzufügen
                     modified_history.insert(0, {"role": "system", "content": session_bias})
+                
+                # Letzte Model-Eingabe für Debug-Zwecke speichern
+                try:
+                    history_copy = copy.deepcopy(modified_history)
+                except Exception:
+                    history_copy = modified_history.copy()
+
+                self.last_model_input = {
+                    "model": self.current_model,
+                    "message": message,
+                    "history": history_copy,
+                    "timestamp": datetime.now().isoformat()
+                }
                 
                 response_stream = self.ollama.chat_with_model(
                     self.current_model, 
