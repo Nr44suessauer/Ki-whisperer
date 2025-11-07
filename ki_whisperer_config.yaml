@@ -22,11 +22,11 @@ bubble_colors:
 fonts:
   fonts: {'ai_font': 'Consolas', 'ai_font_size': 11, 'system_font': 'Arial', 'system_font_size': 10, 'user_font': 'Courier New', 'user_font_size': 11}
   ai_font: "Consolas"  # AI-Modell
-  ai_font_size: 14  # AI-Modell
+  ai_font_size: 24  # AI-Modell
   system_font: "Arial"  # System-Nachrichten
-  system_font_size: 8  # System-Nachrichten
+  system_font_size: 24  # System-Nachrichten
   user_font: "Courier New"  # Sie (Matrix-Style)
-  user_font_size: 14  # Sie (Matrix-Style)
+  user_font_size: 24  # Sie (Matrix-Style)
 
 # ========================================
 # KONSOLEN-EINSTELLUNGEN
@@ -41,7 +41,7 @@ console:
 # Flache Struktur für Kompatibilität (wird automatisch generiert)
 ai_bg_color: '#1E3A5F'
 ai_font: Consolas
-ai_font_size: 14
+ai_font_size: 24
 ai_text_color: white
 bubble_colors:
   ai_bg_color: '#1E3A5F'
@@ -67,9 +67,9 @@ fonts:
 show_system_messages: false
 system_bg_color: '#722F37'
 system_font: Arial
-system_font_size: 8
+system_font_size: 24
 system_text_color: white
 user_bg_color: '#003300'
 user_font: Courier New
-user_font_size: 14
+user_font_size: 24
 user_text_color: '#1455EB'

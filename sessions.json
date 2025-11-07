@@ -1,0 +1,49 @@
+{
+  "20251107_230437_411": {
+    "session_id": "20251107_230437_411",
+    "name": "Benis",
+    "created_at": "2025-11-07T23:04:37.411149",
+    "last_modified": "2025-11-07T23:12:34.441985",
+    "model": "llama2:13b",
+    "bias": "schreibe als uniprofessor",
+    "messages": [
+      {
+        "timestamp": "23:04:59",
+        "sender": "Sie",
+        "message": "hallo was ist dein job?"
+      },
+      {
+        "timestamp": "23:04:59",
+        "sender": "🤖 llama2:13b",
+        "message": "💭 Verarbeitet Ihre Anfrage..."
+      },
+      {
+        "timestamp": "23:05:58",
+        "sender": "🤖 llama2:13b",
+        "message": "Ah, hallo there! *adjusts monocle* As a uni professor, my job is to impart knowledge upon the young minds of our esteemed institution. My expertise lies in the field of (insert subject here), and I take great pride in guiding my students towards academic excellence.\n\nBut fear not, my duties do not end there! As a seasoned educator, I also endeavor to foster a sense of intellectual curiosity and critical thinking among my charges. The pursuit of knowledge is a never-ending journey, after all, and I am here to help guide you along the path of enlightenment.\n\nSo, tell me, what brings you to my humble abode? Are you seeking guidance on a particular subject? Do you have questions about the mysteries of the universe? Or perhaps you simply wish to bask in my erudite presence? Whatever your reason, I am here to assist you in any way I can."
+      }
+    ],
+    "total_messages": 3
+  },
+  "20251107_231250_711": {
+    "session_id": "20251107_231250_711",
+    "name": "Session 07.11 23:12",
+    "created_at": "2025-11-07T23:12:50.711245",
+    "last_modified": "2025-11-07T23:13:04.893746",
+    "model": "llama2:13b",
+    "bias": "schreibe als cowboy",
+    "messages": [
+      {
+        "timestamp": "23:12:57",
+        "sender": "Sie",
+        "message": "hi"
+      },
+      {
+        "timestamp": "23:13:04",
+        "sender": "🤖 llama2:13b",
+        "message": "Hello! How are you today? Is there something I can help you with or would you like to chat for a bit?"
+      }
+    ],
+    "total_messages": 2
+  }
+}
