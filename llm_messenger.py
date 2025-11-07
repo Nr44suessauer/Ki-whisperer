@@ -6,7 +6,7 @@ Ein moderner Chat-Client mit Ollama-Integration für lokale AI-Modelle
 
 import tkinter as tk
 import customtkinter as ctk
-from tkinter import messagebox, scrolledtext, colorchooser
+from tkinter import messagebox, scrolledtext, colorchooser, filedialog
 import requests
 import json
 import threading
@@ -881,6 +881,17 @@ class LLMMessenger:
         )
         self.stop_btn.pack(side="right", padx=(0, 10), pady=10)
         
+        # Export Button
+        self.export_btn = ctk.CTkButton(
+            self.input_frame,
+            text="📄 Export",
+            command=self.export_session,
+            width=80,
+            fg_color="#4a4a4a",
+            hover_color="#5a5a5a"
+        )
+        self.export_btn.pack(side="right", padx=(0, 5), pady=10)
+        
         # Progress Bar (initial versteckt) - im Chat-Tab
         self.progress_frame = ctk.CTkFrame(self.chat_tab)
         self.progress_label = ctk.CTkLabel(self.progress_frame, text="Download läuft...")
@@ -1739,6 +1750,436 @@ class LLMMessenger:
             except:
                 pass
             self.current_thinking_bubble = None
+
+    def export_session(self):
+        """Exportiert die aktuelle Chat-Session"""
+        if not self.chat_bubbles:
+            messagebox.showinfo("Export", "Keine Chat-Session zum Exportieren vorhanden!")
+            return
+        
+        # Hauptdialog für Formatauswahl
+        dialog = ctk.CTkToplevel(self.root)
+        dialog.title("Session Export - Format auswählen")
+        dialog.geometry("900x600")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Zentriere das Dialog-Fenster
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (900 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (600 // 2)
+        dialog.geometry(f"900x600+{x}+{y}")
+        
+        # Hauptcontainer
+        main_frame = ctk.CTkFrame(dialog)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Titel
+        title_label = ctk.CTkLabel(main_frame, text="📄 Export-Format auswählen", 
+                                  font=("Arial", 20, "bold"))
+        title_label.pack(pady=(10, 20))
+        
+        # Container für Format-Auswahl (Links/Rechts Layout)
+        content_frame = ctk.CTkFrame(main_frame)
+        content_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Linke Seite - Format-Buttons
+        left_frame = ctk.CTkFrame(content_frame)
+        left_frame.pack(side="left", fill="y", padx=(10, 5), pady=10)
+        
+        ctk.CTkLabel(left_frame, text="Verfügbare Formate:", 
+                    font=("Arial", 14, "bold")).pack(pady=(10, 15))
+        
+        # Variable für Formatauswahl
+        self.selected_format = None
+        
+        def show_markdown_preview():
+            self.selected_format = "markdown"
+            self.update_preview(preview_frame, "markdown")
+            # Highlight aktiven Button
+            markdown_btn.configure(fg_color="#1f538d", hover_color="#2966a3")
+            json_btn.configure(fg_color="#4a4a4a", hover_color="#5a5a5a")
+        
+        def show_json_preview():
+            self.selected_format = "json"
+            self.update_preview(preview_frame, "json")
+            # Highlight aktiven Button  
+            json_btn.configure(fg_color="#1f538d", hover_color="#2966a3")
+            markdown_btn.configure(fg_color="#4a4a4a", hover_color="#5a5a5a")
+        
+        # Format-Buttons
+        markdown_btn = ctk.CTkButton(left_frame, 
+                                   text="📄 Markdown (.md)\n\n🧑‍💼 Menschenfreundlich\n📋 Formatiert & lesbar\n📚 Für Dokumentation",
+                                   command=show_markdown_preview,
+                                   width=220, height=90,
+                                   font=("Arial", 11),
+                                   anchor="center")
+        markdown_btn.pack(pady=10)
+        
+        json_btn = ctk.CTkButton(left_frame,
+                               text="📊 JSON (.json)\n\n🤖 Maschinenlesbar\n⚙️ Strukturierte Daten\n🔗 Für APIs & Tools", 
+                               command=show_json_preview,
+                               width=220, height=90,
+                               font=("Arial", 11),
+                               anchor="center")
+        json_btn.pack(pady=10)
+        
+        # Rechte Seite - Vorschau
+        right_frame = ctk.CTkFrame(content_frame)
+        right_frame.pack(side="right", fill="both", expand=True, padx=(5, 10), pady=10)
+        
+        ctk.CTkLabel(right_frame, text="Format-Vorschau:", 
+                    font=("Arial", 14, "bold")).pack(pady=(10, 10))
+        
+        # Vorschau-Frame
+        preview_frame = ctk.CTkFrame(right_frame)
+        preview_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Standard: Markdown-Vorschau anzeigen
+        show_markdown_preview()
+        
+        # Action-Buttons unten
+        button_frame = ctk.CTkFrame(main_frame)
+        button_frame.pack(fill="x", pady=(10, 10))
+        
+        def export_selected():
+            if self.selected_format == "markdown":
+                dialog.destroy()
+                self.export_to_markdown()
+            elif self.selected_format == "json":
+                dialog.destroy()
+                self.export_to_json()
+        
+        export_btn = ctk.CTkButton(button_frame, text="📤 Exportieren", 
+                                 command=export_selected, 
+                                 width=120, height=35,
+                                 font=("Arial", 12, "bold"))
+        export_btn.pack(side="right", padx=(10, 20), pady=10)
+        
+        cancel_btn = ctk.CTkButton(button_frame, text="❌ Abbrechen", 
+                                 command=dialog.destroy,
+                                 width=100, height=35,
+                                 fg_color="#666666", hover_color="#555555")
+        cancel_btn.pack(side="right", padx=5, pady=10)
+
+    def update_preview(self, preview_frame, format_type):
+        """Aktualisiert die Vorschau basierend auf dem gewählten Format"""
+        # Alle Widgets im Vorschau-Frame löschen
+        for widget in preview_frame.winfo_children():
+            widget.destroy()
+        
+        if format_type == "markdown":
+            self.show_markdown_preview(preview_frame)
+        elif format_type == "json":
+            self.show_json_preview(preview_frame)
+
+    def show_markdown_preview(self, parent):
+        """Zeigt eine Markdown-Vorschau"""
+        # Header mit Info
+        header_frame = ctk.CTkFrame(parent)
+        header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        
+        ctk.CTkLabel(header_frame, text="📄 Markdown-Format", 
+                    font=("Arial", 14, "bold")).pack(side="left", padx=10, pady=5)
+        
+        info_label = ctk.CTkLabel(header_frame, 
+                                text="✅ Menschenfreundlich  ✅ GitHub-kompatibel  ✅ Übersichtlich",
+                                font=("Arial", 10),
+                                text_color="#00AA00")
+        info_label.pack(side="right", padx=10, pady=5)
+        
+        # Beispiel-Content
+        markdown_example = """# Ki-whisperer Chat Session
+
+**Session-ID:** `20251107_143025`
+**Exportiert am:** 07.11.2025 um 14:30:25
+**Modell:** llama3.1:8b  
+**Anzahl Nachrichten:** 4
+**Session-Start:** 14:25:12
+**Session-Ende:** 14:26:05
+
+---
+
+**[14:25:12]**
+
+### 👤 Benutzer
+
+Erkläre mir Machine Learning in einfachen Worten
+
+**[14:25:15]**
+
+### 🤖 llama3.1:8b
+
+Machine Learning ist eine Methode der künstlichen 
+Intelligenz, bei der Computer lernen, Muster in 
+Daten zu erkennen und Vorhersagen zu treffen.
+
+**Hauptkonzepte:**
+- **Training:** Computer lernt aus Beispieldaten
+- **Modelle:** Mathematische Algorithmen  
+- **Vorhersagen:** System macht Prognosen
+
+---
+
+**[14:26:01]**
+
+### 👤 Benutzer
+
+Kannst du ein einfaches Beispiel geben?
+
+---
+
+*Session-ID: 20251107_143025*
+*Generiert von Ki-whisperer LLM Chat Client*"""
+
+        # Scrollbarer Text
+        text_frame = ctk.CTkScrollableFrame(parent)
+        text_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Beispiel-Text in einem Textfeld
+        text_widget = ctk.CTkTextbox(text_frame, height=350, font=("Consolas", 9))
+        text_widget.pack(fill="both", expand=True)
+        text_widget.insert("1.0", markdown_example)
+        text_widget.configure(state="disabled")
+
+    def show_json_preview(self, parent):
+        """Zeigt eine JSON-Vorschau"""
+        # Header mit Info
+        header_frame = ctk.CTkFrame(parent)
+        header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        
+        ctk.CTkLabel(header_frame, text="📊 JSON-Format", 
+                    font=("Arial", 14, "bold")).pack(side="left", padx=10, pady=5)
+        
+        info_label = ctk.CTkLabel(header_frame,
+                                text="✅ Strukturiert  ✅ API-kompatibel  ✅ Maschinenlesbar",
+                                font=("Arial", 10),
+                                text_color="#00AA00")
+        info_label.pack(side="right", padx=10, pady=5)
+        
+        # Beispiel-Content
+        json_example = """{
+  "session_info": {
+    "session_id": "20251107_143025",
+    "export_timestamp": "2025-11-07T14:30:25.123456",
+    "session_start": "14:25:12",
+    "session_end": "14:26:05",
+    "model": "llama3.1:8b",
+    "total_messages": 4
+  },
+  "messages": [
+    {
+      "timestamp": "14:25:12",
+      "role": "user", 
+      "sender": "Benutzer",
+      "content": "Erkläre mir Machine Learning in einfachen Worten"
+    },
+    {
+      "timestamp": "14:25:15",
+      "role": "assistant",
+      "sender": "llama3.1:8b", 
+      "content": "Machine Learning ist eine Methode der künstlichen Intelligenz..."
+    },
+    {
+      "timestamp": "14:26:01", 
+      "role": "user",
+      "sender": "Benutzer",
+      "content": "Kannst du ein einfaches Beispiel geben?"
+    },
+    {
+      "timestamp": "14:26:05",
+      "role": "assistant", 
+      "sender": "llama3.1:8b",
+      "content": "Stellen Sie sich vor, Sie bringen einem Kind bei..."
+    }
+  ]
+}"""
+
+        # Scrollbarer Text
+        text_frame = ctk.CTkScrollableFrame(parent)
+        text_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Beispiel-Text in einem Textfeld
+        text_widget = ctk.CTkTextbox(text_frame, height=350, font=("Consolas", 9))
+        text_widget.pack(fill="both", expand=True)
+        text_widget.insert("1.0", json_example)
+        text_widget.configure(state="disabled")
+
+    def export_to_markdown(self):
+        """Exportiert die Chat-Session als Markdown-Datei"""
+        try:
+            # Session-ID mit Datum und Zeitstempel erstellen
+            session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+            
+            # Sessions-Ordner erstellen falls nicht vorhanden
+            sessions_dir = os.path.join(os.getcwd(), "sessions")
+            if not os.path.exists(sessions_dir):
+                os.makedirs(sessions_dir)
+            
+            # Standard-Dateiname mit Session-ID
+            default_filename = f"session_{session_id}.md"
+            default_path = os.path.join(sessions_dir, default_filename)
+            
+            # Datei-Dialog mit Sessions-Ordner als Standard
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".md",
+                filetypes=[("Markdown files", "*.md"), ("All files", "*.*")],
+                initialfile=default_filename,
+                initialdir=sessions_dir,
+                title="Chat-Session als Markdown exportieren"
+            )
+            
+            if file_path:
+                # Session-ID aus dem gewählten Dateipfad extrahieren
+                filename = os.path.basename(file_path)
+                if filename.startswith("session_") and filename.endswith(".md"):
+                    session_id = filename[8:-3]  # Entferne "session_" und ".md"
+                
+                content = self._generate_markdown_content(session_id)
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                
+                messagebox.showinfo("Export erfolgreich", 
+                                  f"Chat-Session wurde erfolgreich exportiert:\n{file_path}\n\nSession-ID: {session_id}")
+        except Exception as e:
+            messagebox.showerror("Export-Fehler", f"Fehler beim Exportieren: {str(e)}")
+
+    def export_to_json(self):
+        """Exportiert die Chat-Session als JSON-Datei"""
+        try:
+            # Session-ID mit Datum und Zeitstempel erstellen
+            session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+            
+            # Sessions-Ordner erstellen falls nicht vorhanden
+            sessions_dir = os.path.join(os.getcwd(), "sessions")
+            if not os.path.exists(sessions_dir):
+                os.makedirs(sessions_dir)
+            
+            # Standard-Dateiname mit Session-ID
+            default_filename = f"session_{session_id}.json"
+            
+            # Datei-Dialog mit Sessions-Ordner als Standard
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".json",
+                filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+                initialfile=default_filename,
+                initialdir=sessions_dir,
+                title="Chat-Session als JSON exportieren"
+            )
+            
+            if file_path:
+                # Session-ID aus dem gewählten Dateipfad extrahieren
+                filename = os.path.basename(file_path)
+                if filename.startswith("session_") and filename.endswith(".json"):
+                    session_id = filename[8:-5]  # Entferne "session_" und ".json"
+                
+                # Sammle Chat-Daten
+                chat_data = {
+                    "session_info": {
+                        "session_id": session_id,
+                        "export_timestamp": datetime.now().isoformat(),
+                        "session_start": self.chat_bubbles[0].timestamp if self.chat_bubbles else None,
+                        "session_end": self.chat_bubbles[-1].timestamp if self.chat_bubbles else None,
+                        "model": getattr(self, 'current_model', 'Unbekannt'),
+                        "total_messages": len(self.chat_bubbles)
+                    },
+                    "messages": []
+                }
+                
+                for bubble in self.chat_bubbles:
+                    # Bereinige den Sender-Text (entferne Emojis)
+                    sender = bubble.sender
+                    if sender.startswith("👤"):
+                        role = "user"
+                        clean_sender = sender.replace("👤 ", "").strip()
+                    elif sender.startswith("🤖"):
+                        role = "assistant"  
+                        clean_sender = sender.replace("🤖 ", "").strip()
+                    else:
+                        role = "system"
+                        clean_sender = sender
+                    
+                    message_data = {
+                        "timestamp": bubble.timestamp,
+                        "role": role,
+                        "sender": clean_sender,
+                        "content": bubble.message
+                    }
+                    
+                    chat_data["messages"].append(message_data)
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(chat_data, f, ensure_ascii=False, indent=2)
+                
+                messagebox.showinfo("Export erfolgreich", 
+                                  f"Chat-Session wurde erfolgreich exportiert:\n{file_path}\n\nSession-ID: {session_id}")
+        except Exception as e:
+            messagebox.showerror("Export-Fehler", f"Fehler beim Exportieren: {str(e)}")
+
+    def _generate_markdown_content(self, session_id=None):
+        """Generiert Markdown-Content für den Export"""
+        lines = []
+        
+        # Session-ID falls nicht übergeben
+        if session_id is None:
+            session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Header mit Session-ID
+        lines.append("# Ki-whisperer Chat Session")
+        lines.append("")
+        lines.append(f"**Session-ID:** `{session_id}`")
+        lines.append(f"**Exportiert am:** {datetime.now().strftime('%d.%m.%Y um %H:%M:%S')}")
+        lines.append(f"**Modell:** {getattr(self, 'current_model', 'Unbekannt')}")
+        lines.append(f"**Anzahl Nachrichten:** {len(self.chat_bubbles)}")
+        
+        # Session-Zeitraum
+        if self.chat_bubbles:
+            session_start = self.chat_bubbles[0].timestamp
+            session_end = self.chat_bubbles[-1].timestamp
+            lines.append(f"**Session-Start:** {session_start}")
+            lines.append(f"**Session-Ende:** {session_end}")
+        
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+        
+        # Chat-Nachrichten
+        for i, bubble in enumerate(self.chat_bubbles, 1):
+            # Zeitstempel
+            lines.append(f"**[{bubble.timestamp}]**")
+            lines.append("")
+            
+            # Sender und Rolle ermitteln
+            sender = bubble.sender
+            if sender.startswith("👤"):
+                lines.append(f"### 👤 Benutzer")
+                lines.append("")
+                lines.append(bubble.message)
+            elif sender.startswith("🤖"):
+                model_name = sender.replace("🤖 ", "").strip()
+                lines.append(f"### 🤖 {model_name}")
+                lines.append("")
+                lines.append(bubble.message)
+            else:
+                lines.append(f"### ℹ️ {sender}")
+                lines.append("")
+                lines.append(bubble.message)
+            
+            lines.append("")
+            
+            # Trennlinie zwischen Nachrichten (außer bei der letzten)
+            if i < len(self.chat_bubbles):
+                lines.append("---")
+                lines.append("")
+        
+        # Footer
+        lines.append("---")
+        lines.append("")
+        lines.append(f"*Session-ID: {session_id}*")
+        lines.append("*Generiert von Ki-whisperer LLM Chat Client*")
+        
+        return '\n'.join(lines)
     
     def run(self):
         """Startet die Anwendung"""
