@@ -6,18 +6,128 @@ Ein moderner Chat-Client mit Ollama-Integration für lokale AI-Modelle
 
 import tkinter as tk
 import customtkinter as ctk
-from tkinter import messagebox, scrolledtext
+from tkinter import messagebox, scrolledtext, colorchooser
 import requests
 import json
 import threading
 import time
 from datetime import datetime
 import ollama
+import yaml
+import os
 import os
 
 # Erscheinungsbild konfigurieren
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+class ChatBubble(ctk.CTkFrame):
+    """Ein einzelne Chat-Bubble mit Kopier-Funktionalität"""
+    
+    def __init__(self, master, sender, message, timestamp, app_config=None, **kwargs):
+        super().__init__(master, **kwargs)
+        
+        self.sender = sender
+        self.message = message
+        self.timestamp = timestamp
+        self.app_config = app_config or {}
+        
+        # Bestimme Bubble-Stil basierend auf Sender und Config
+        if sender == "Sie":
+            bubble_color = self.app_config.get("user_bg_color", "#003300")
+            text_color = self.app_config.get("user_text_color", "#00FF00")
+            font = self.app_config.get("user_font", "Courier New")
+            font_size = self.app_config.get("user_font_size", 11)
+            anchor = "e"  # Rechts ausrichten
+        elif "🤖" in sender:
+            bubble_color = self.app_config.get("ai_bg_color", "#1E3A5F")
+            text_color = self.app_config.get("ai_text_color", "white")
+            font = self.app_config.get("ai_font", "Consolas")
+            font_size = self.app_config.get("ai_font_size", 11)
+            anchor = "w"  # Links ausrichten
+        else:  # System
+            bubble_color = self.app_config.get("system_bg_color", "#722F37")
+            text_color = self.app_config.get("system_text_color", "white")
+            font = self.app_config.get("system_font", "Arial")
+            font_size = self.app_config.get("system_font_size", 10)
+            anchor = "w"
+        
+        self.configure(fg_color=bubble_color, corner_radius=10)
+        
+        # Matrix-Effekt für "Sie"-Bubbles
+        if sender == "Sie":
+            border_color = self.app_config.get("user_text_color", "#00FF00")
+            self.configure(border_width=2, border_color=border_color)
+        
+        # Header mit Sender und Kopier-Button
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        
+        # Sender und Timestamp
+        header_text = f"{sender} • {timestamp}"
+        header_font = (font, 10, "bold")
+        self.sender_label = ctk.CTkLabel(
+            self.header_frame, 
+            text=header_text,
+            font=header_font,
+            text_color=text_color
+        )
+        self.sender_label.pack(side="left")
+        
+        # Kopier-Button
+        copy_btn_color = "transparent"
+        copy_border_color = text_color
+        self.copy_btn = ctk.CTkButton(
+            self.header_frame,
+            text="📋 Kopieren",
+            command=self.copy_message,
+            width=80,
+            height=20,
+            font=(font, 9),
+            fg_color=copy_btn_color,
+            hover_color="#505050",  # Feste graue Farbe für Hover
+            border_width=1,
+            border_color=copy_border_color
+        )
+        self.copy_btn.pack(side="right")
+        
+        # Nachrichteninhalt
+        message_font = (font, font_size)
+        self.message_label = ctk.CTkTextbox(
+            self,
+            wrap="word",
+            font=message_font,
+            text_color=text_color,
+            fg_color="transparent",
+            height=min(max(len(message) // 60 + 1, 2) * 20, 200)  # Dynamische Höhe
+        )
+        self.message_label.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        
+        # Füge Nachricht hinzu und deaktiviere Bearbeitung
+        self.message_label.insert("1.0", message)
+        self.message_label.configure(state="disabled")
+        
+        # Packe Bubble mit korrekter Ausrichtung
+        self.pack(fill="x", padx=20 if anchor == "e" else 5, 
+                 pady=5, anchor=anchor)
+    
+    def copy_message(self):
+        """Kopiert die Nachricht in die Zwischenablage"""
+        try:
+            self.clipboard_clear()
+            self.clipboard_append(self.message)
+            self.update()  # Stelle sicher, dass Clipboard-Änderung verarbeitet wird
+            
+            # Kurzes visuelles Feedback
+            original_text = self.copy_btn.cget("text")
+            self.copy_btn.configure(text="✅ Kopiert!")
+            self.after(1000, lambda: self.copy_btn.configure(text=original_text))
+            
+        except Exception as e:
+            print(f"Fehler beim Kopieren: {e}")
+            # Fallback: Zeige Fehlermeldung
+            self.copy_btn.configure(text="❌ Fehler")
+            self.after(1000, lambda: self.copy_btn.configure(text="📋 Kopieren"))
 
 class OllamaManager:
     """Klasse für Ollama-API-Interaktionen"""
@@ -400,8 +510,222 @@ class LLMMessenger:
         self.response_message_widget = None
         self.current_response_text = ""  # Verfolge bereits angezeigte Tokens
         
+        # Nachrichten-Historie für Pfeiltasten-Navigation
+        self.message_history = []  # Liste aller gesendeten Nachrichten
+        self.history_index = -1    # Aktueller Index in der Historie (-1 = keine Auswahl)
+        
+        # YAML-Konfigurationsdatei
+        self.config_file = "ki_whisperer_config.yaml"
+        
+        # Lade Konfiguration aus YAML-Datei
+        self.config = self.load_config()
+        
         self.setup_ui()
         self.check_ollama_status()
+        self.setup_console_styling()
+    
+    def get_default_config(self):
+        """Gibt die Standard-Konfiguration zurück"""
+        return {
+            # Bubble-Farben
+            "user_bg_color": "#003300",      # Sie - Hintergrund
+            "user_text_color": "#00FF00",    # Sie - Text (Matrix)
+            "ai_bg_color": "#1E3A5F",        # AI - Hintergrund
+            "ai_text_color": "white",        # AI - Text
+            "system_bg_color": "#722F37",    # System - Hintergrund
+            "system_text_color": "white",    # System - Text
+            
+            # Schriftarten und individuelle Größen
+            "user_font": "Courier New",      # Sie - Matrix-Font
+            "user_font_size": 11,            # Sie - Individuelle Größe
+            "ai_font": "Consolas",           # AI - Code-Font
+            "ai_font_size": 11,              # AI - Individuelle Größe
+            "system_font": "Arial",          # System - Standard-Font
+            "system_font_size": 10,          # System - Individuelle Größe
+            
+            # Konsolen-Farben
+            "console_bg": "#000000",         # Konsolen-Hintergrund
+            "console_text": "#FFFFFF",       # Konsolen-Text
+            "console_font": "Consolas"       # Konsolen-Schriftart
+        }
+    
+    def load_config(self):
+        """Lädt die Konfiguration aus der YAML-Datei oder erstellt Standard-Config"""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r', encoding='utf-8') as file:
+                    config = yaml.safe_load(file)
+                    if config:
+                        # Fülle fehlende Werte mit Standardwerten auf
+                        default_config = self.get_default_config()
+                        for key, value in default_config.items():
+                            if key not in config:
+                                config[key] = value
+                        print(f"✅ Konfiguration geladen aus {self.config_file}")
+                        return config
+                    
+            # Fallback auf Standard-Konfiguration
+            default_config = self.get_default_config()
+            self.save_config(default_config)
+            print(f"📝 Standard-Konfiguration erstellt in {self.config_file}")
+            return default_config
+            
+        except Exception as e:
+            print(f"❌ Fehler beim Laden der Konfiguration: {e}")
+            print("🔄 Verwende Standard-Konfiguration")
+            return self.get_default_config()
+    
+    def save_config(self, config=None):
+        """Speichert die Konfiguration in die YAML-Datei"""
+        try:
+            config_to_save = config or self.config
+            
+            # Erstelle YAML mit Kommentaren
+            yaml_content = """# Ki-Whisperer Konfigurationsdatei
+# Diese Datei wird automatisch erstellt und aktualisiert
+# Alle Änderungen werden beim Anwenden in der GUI gespeichert
+
+# ========================================
+# CHAT-BUBBLE FARBEN
+# ========================================
+"""
+            
+            # Bubble-Farben Sektion
+            bubble_colors = {k: v for k, v in config_to_save.items() if 'color' in k and 'console' not in k}
+            yaml_content += "# Farben für Chat-Bubbles (Hex-Codes)\nbubble_colors:\n"
+            
+            for key, value in bubble_colors.items():
+                comment = ""
+                if "user" in key:
+                    comment = "  # Sie (Matrix-Style)"
+                elif "ai" in key:
+                    comment = "  # AI-Modell"
+                elif "system" in key:
+                    comment = "  # System-Nachrichten"
+                yaml_content += f"  {key}: \"{value}\"{comment}\n"
+            
+            yaml_content += "\n# ========================================\n"
+            yaml_content += "# SCHRIFTARTEN & GRÖßEN\n"
+            yaml_content += "# ========================================\n"
+            
+            # Font-Konfiguration
+            font_config = {k: v for k, v in config_to_save.items() if 'font' in k and 'console' not in k}
+            yaml_content += "# Schriftarten und individuelle Größen\nfonts:\n"
+            
+            for key, value in font_config.items():
+                comment = ""
+                if "user" in key:
+                    comment = "  # Sie (Matrix-Style)"
+                elif "ai" in key:
+                    comment = "  # AI-Modell"  
+                elif "system" in key:
+                    comment = "  # System-Nachrichten"
+                
+                if isinstance(value, str):
+                    yaml_content += f"  {key}: \"{value}\"{comment}\n"
+                else:
+                    yaml_content += f"  {key}: {value}{comment}\n"
+            
+            yaml_content += "\n# ========================================\n"
+            yaml_content += "# KONSOLEN-EINSTELLUNGEN\n"
+            yaml_content += "# ========================================\n"
+            
+            # Konsolen-Konfiguration
+            console_config = {k: v for k, v in config_to_save.items() if 'console' in k}
+            yaml_content += "# Terminal/Konsolen-Ausgabe Styling\nconsole:\n"
+            
+            for key, value in console_config.items():
+                yaml_content += f"  {key}: \"{value}\"\n"
+                
+            # Schreibe YAML-Datei
+            with open(self.config_file, 'w', encoding='utf-8') as file:
+                # Schreibe manuelle YAML-Struktur für bessere Kommentare
+                file.write(yaml_content)
+                
+                # Füge flache Struktur hinzu für einfache Kompatibilität
+                file.write("\n# Flache Struktur für Kompatibilität (wird automatisch generiert)\n")
+                yaml.dump(config_to_save, file, default_flow_style=False, allow_unicode=True)
+            
+            print(f"💾 Konfiguration gespeichert in {self.config_file}")
+            
+        except Exception as e:
+            print(f"❌ Fehler beim Speichern der Konfiguration: {e}")
+    
+    def reset_config_to_defaults(self):
+        """Setzt die Konfiguration auf Standardwerte zurück und speichert sie"""
+        self.config = self.get_default_config()
+        self.save_config()
+        print("🔄 Konfiguration auf Standardwerte zurückgesetzt und gespeichert")
+    
+    def setup_console_styling(self):
+        """Richtet Konsolen-Styling mit ANSI-Codes ein"""
+        import os
+        # Aktiviere ANSI-Escape-Sequenzen für Windows
+        if os.name == 'nt':
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+    
+    def console_print(self, text, style="normal"):
+        """Konsolen-Ausgabe mit konfigurierten Farben und Styling"""
+        try:
+            # Hole Konsolen-Konfiguration
+            bg_color = self.config.get("console_bg", "#000000")
+            text_color = self.config.get("console_text", "#FFFFFF")
+            
+            # Konvertiere Hex zu ANSI-Codes
+            def hex_to_ansi_fg(hex_color):
+                """Konvertiert Hex-Farbe zu ANSI-Vordergrund-Code"""
+                hex_color = hex_color.lstrip('#')
+                if len(hex_color) == 6:
+                    r = int(hex_color[0:2], 16)
+                    g = int(hex_color[2:4], 16)
+                    b = int(hex_color[4:6], 16)
+                    return f"\033[38;2;{r};{g};{b}m"
+                return "\033[37m"  # Weiß als Fallback
+            
+            def hex_to_ansi_bg(hex_color):
+                """Konvertiert Hex-Farbe zu ANSI-Hintergrund-Code"""
+                hex_color = hex_color.lstrip('#')
+                if len(hex_color) == 6:
+                    r = int(hex_color[0:2], 16)
+                    g = int(hex_color[2:4], 16)
+                    b = int(hex_color[4:6], 16)
+                    return f"\033[48;2;{r};{g};{b}m"
+                return "\033[40m"  # Schwarz als Fallback
+            
+            # ANSI-Codes für Styling
+            reset_code = "\033[0m"
+            fg_code = hex_to_ansi_fg(text_color)
+            bg_code = hex_to_ansi_bg(bg_color)
+            
+            # Style-spezifische Codes
+            style_codes = {
+                "normal": "",
+                "bold": "\033[1m",
+                "italic": "\033[3m", 
+                "underline": "\033[4m",
+                "success": "\033[1m\033[32m",  # Grün + Bold
+                "error": "\033[1m\033[31m",    # Rot + Bold
+                "warning": "\033[1m\033[33m",  # Gelb + Bold
+                "info": "\033[1m\033[36m"      # Cyan + Bold
+            }
+            
+            style_code = style_codes.get(style, "")
+            
+            # Formatierte Ausgabe mit konfigurierten Farben
+            if style in ["success", "error", "warning", "info"]:
+                # Für spezielle Styles verwende die eingebauten Farben
+                formatted_text = f"{style_code}{text}{reset_code}"
+            else:
+                # Für normale Ausgabe verwende konfigurierte Farben
+                formatted_text = f"{bg_code}{fg_code}{style_code}{text}{reset_code}"
+            
+            print(formatted_text)
+            
+        except Exception:
+            # Fallback auf normale print-Funktion
+            print(text)
     
     def setup_ui(self):
         """Erstellt die Benutzeroberfläche"""
@@ -410,8 +734,26 @@ class LLMMessenger:
         self.main_frame = ctk.CTkFrame(self.root)
         self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
+        # Tab-System erstellen
+        self.tab_view = ctk.CTkTabview(self.main_frame)
+        self.tab_view.pack(fill="both", expand=True)
+        
+        # Chat-Tab hinzufügen
+        self.chat_tab = self.tab_view.add("Chat")
+        self.setup_chat_tab()
+        
+        # Config-Tab hinzufügen  
+        self.config_tab = self.tab_view.add("Config")
+        self.setup_config_tab()
+        
+        # Standard-Tab setzen
+        self.tab_view.set("Chat")
+    
+    def setup_chat_tab(self):
+        """Erstellt den Chat-Tab mit allen Elementen"""
+        
         # Oberes Panel für Modell-Management
-        self.top_panel = ctk.CTkFrame(self.main_frame)
+        self.top_panel = ctk.CTkFrame(self.chat_tab)
         self.top_panel.pack(fill="x", padx=10, pady=(10, 5))
         
         # Erste Zeile: Status und installierte Modelle
@@ -492,16 +834,18 @@ class LLMMessenger:
         self.refresh_btn.pack(side="left", padx=5, pady=10)
         
         # Chat-Bereich
-        self.chat_frame = ctk.CTkFrame(self.main_frame)
+        self.chat_frame = ctk.CTkFrame(self.chat_tab)
         self.chat_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
-        # Chat-Verlauf
-        self.chat_display = ctk.CTkTextbox(
+        # Chat-Verlauf mit Scrollable Frame
+        self.chat_display_frame = ctk.CTkScrollableFrame(
             self.chat_frame,
-            wrap="word",
-            font=("Consolas", 12)
+            label_text="Chat-Verlauf"
         )
-        self.chat_display.pack(fill="both", expand=True, padx=10, pady=(10, 5))
+        self.chat_display_frame.pack(fill="both", expand=True, padx=10, pady=(10, 5))
+        
+        # Liste für Chat-Bubbles
+        self.chat_bubbles = []
         
         # Eingabe-Bereich
         self.input_frame = ctk.CTkFrame(self.chat_frame)
@@ -514,6 +858,9 @@ class LLMMessenger:
         )
         self.message_entry.pack(side="left", fill="x", expand=True, padx=(0, 10), pady=10)
         self.message_entry.bind("<Return>", self.send_message)
+        self.message_entry.bind("<Up>", self.navigate_history_up)
+        self.message_entry.bind("<Down>", self.navigate_history_down)
+        self.message_entry.bind("<Key>", self.on_key_press)
         
         self.send_btn = ctk.CTkButton(
             self.input_frame,
@@ -534,8 +881,8 @@ class LLMMessenger:
         )
         self.stop_btn.pack(side="right", padx=(0, 10), pady=10)
         
-        # Progress Bar (initial versteckt)
-        self.progress_frame = ctk.CTkFrame(self.main_frame)
+        # Progress Bar (initial versteckt) - im Chat-Tab
+        self.progress_frame = ctk.CTkFrame(self.chat_tab)
         self.progress_label = ctk.CTkLabel(self.progress_frame, text="Download läuft...")
         self.progress_label.pack(pady=5)
         self.progress_bar = ctk.CTkProgressBar(self.progress_frame)
@@ -543,6 +890,422 @@ class LLMMessenger:
         
         # Initial Chat-Nachricht
         self.add_to_chat("System", "Willkommen im LLM Messenger! Wählen Sie ein Modell aus oder laden Sie eines herunter.")
+    
+    def setup_config_tab(self):
+        """Erstellt den Config-Tab mit Einstellungen"""
+        
+        # Container für Config-Tab mit fixierten Buttons
+        config_container = ctk.CTkFrame(self.config_tab)
+        config_container.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Haupt-Scrollable Frame für Config-Inhalte
+        config_scroll = ctk.CTkScrollableFrame(config_container, label_text="Konfiguration")
+        config_scroll.pack(fill="both", expand=True, padx=10, pady=(10, 10))
+        
+        # Fixierte Button-Leiste am unteren Rand
+        button_frame = ctk.CTkFrame(config_container)
+        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        
+        # Container für zentrierte Buttons
+        button_container = ctk.CTkFrame(button_frame)
+        button_container.pack(expand=True)
+        
+        # Buttons nebeneinander zentriert
+        apply_btn = ctk.CTkButton(button_container, text="✅ Anwenden", command=self.apply_config, 
+                                 width=140, height=35, font=("Arial", 12, "bold"))
+        apply_btn.pack(side="left", padx=(15, 10), pady=15)
+        
+        reset_btn = ctk.CTkButton(button_container, text="🔄 Standard", command=self.reset_config, 
+                                 width=140, height=35, font=("Arial", 12, "bold"))
+        reset_btn.pack(side="left", padx=(10, 15), pady=15)
+        
+        # Bubble-Farben Sektion
+        bubble_frame = ctk.CTkFrame(config_scroll)
+        bubble_frame.pack(fill="x", pady=(0, 20))
+        
+        bubble_title = ctk.CTkLabel(bubble_frame, text="🎨 Chat-Bubble Farben", font=("Arial", 16, "bold"))
+        bubble_title.pack(pady=(15, 10))
+        
+        # Sie (User) Farben - Komprimiert
+        user_main_frame = ctk.CTkFrame(bubble_frame)
+        user_main_frame.pack(fill="x", padx=15, pady=5)
+        ctk.CTkLabel(user_main_frame, text="💬 Sie:", font=("Arial", 11, "bold"), width=50).pack(side="left", padx=5)
+        
+        user_colors_frame = ctk.CTkFrame(user_main_frame)
+        user_colors_frame.pack(side="left", fill="x", expand=True, padx=5)
+        
+        self.user_bg_entry, self.user_bg_preview = self.setup_color_input_with_preview(
+            user_colors_frame, "Hintergrund:", "user_bg_color", "#003300")
+        self.user_text_entry, self.user_text_preview = self.setup_color_input_with_preview(
+            user_colors_frame, "Text:", "user_text_color", "#00FF00")
+        
+        # AI-Modell Farben - Komprimiert  
+        ai_main_frame = ctk.CTkFrame(bubble_frame)
+        ai_main_frame.pack(fill="x", padx=15, pady=5)
+        ctk.CTkLabel(ai_main_frame, text="🤖 AI:", font=("Arial", 11, "bold"), width=50).pack(side="left", padx=5)
+        
+        ai_colors_frame = ctk.CTkFrame(ai_main_frame)
+        ai_colors_frame.pack(side="left", fill="x", expand=True, padx=5)
+        
+        self.ai_bg_entry, self.ai_bg_preview = self.setup_color_input_with_preview(
+            ai_colors_frame, "Hintergrund:", "ai_bg_color", "#1E3A5F")
+        self.ai_text_entry, self.ai_text_preview = self.setup_color_input_with_preview(
+            ai_colors_frame, "Text:", "ai_text_color", "white")
+        
+        # System Farben - Komprimiert
+        system_main_frame = ctk.CTkFrame(bubble_frame)
+        system_main_frame.pack(fill="x", padx=15, pady=(5, 10))
+        ctk.CTkLabel(system_main_frame, text="ℹ️ System:", font=("Arial", 11, "bold"), width=50).pack(side="left", padx=5)
+        
+        system_colors_frame = ctk.CTkFrame(system_main_frame)
+        system_colors_frame.pack(side="left", fill="x", expand=True, padx=5)
+        
+        self.system_bg_entry, self.system_bg_preview = self.setup_color_input_with_preview(
+            system_colors_frame, "Hintergrund:", "system_bg_color", "#722F37")
+        self.system_text_entry, self.system_text_preview = self.setup_color_input_with_preview(
+            system_colors_frame, "Text:", "system_text_color", "white")
+        
+        # Schriftarten Sektion
+        font_frame = ctk.CTkFrame(config_scroll)
+        font_frame.pack(fill="x", pady=(0, 15))
+        
+        font_title = ctk.CTkLabel(font_frame, text="🔤 Schriftarten", font=("Arial", 16, "bold"))
+        font_title.pack(pady=(10, 5))
+        
+        # Font-Dropdowns mit individuellen Größen
+        font_dropdowns_frame = ctk.CTkFrame(font_frame)
+        font_dropdowns_frame.pack(fill="x", padx=20, pady=10)
+        
+        # User Font mit Größen-Slider
+        user_font_frame = ctk.CTkFrame(font_dropdowns_frame)
+        user_font_frame.pack(fill="x", pady=3)
+        
+        # Label und Dropdown
+        ctk.CTkLabel(user_font_frame, text="Sie (Matrix):", width=100).pack(side="left", padx=5)
+        self.user_font_combo = ctk.CTkComboBox(user_font_frame, 
+            values=["Courier New", "Consolas", "Monaco", "Lucida Console"],
+            width=130, command=self.update_user_font_preview)
+        self.user_font_combo.pack(side="left", padx=5)
+        self.user_font_combo.set(self.config["user_font"])
+        
+        # Größen-Slider
+        ctk.CTkLabel(user_font_frame, text="Größe:", width=40).pack(side="left", padx=(15, 2))
+        self.user_font_size_slider = ctk.CTkSlider(user_font_frame, from_=8, to=24, number_of_steps=16, width=100)
+        self.user_font_size_slider.pack(side="left", padx=3)
+        self.user_font_size_slider.set(self.config["user_font_size"])
+        self.user_font_size_label = ctk.CTkLabel(user_font_frame, text=f"{self.config['user_font_size']}px", width=30)
+        self.user_font_size_label.pack(side="left", padx=3)
+        self.user_font_size_slider.configure(command=self.update_user_font_preview)
+        
+        # Preview
+        self.user_font_preview = ctk.CTkLabel(user_font_frame, text="💬 Hallo Welt! 123", 
+                                             font=(self.config["user_font"], self.config["user_font_size"]),
+                                             text_color="#00FF00", width=150)
+        self.user_font_preview.pack(side="left", padx=10)
+        
+        # AI Font mit Größen-Slider
+        ai_font_frame = ctk.CTkFrame(font_dropdowns_frame)
+        ai_font_frame.pack(fill="x", pady=3)
+        
+        # Label und Dropdown
+        ctk.CTkLabel(ai_font_frame, text="AI-Modell:", width=100).pack(side="left", padx=5)
+        self.ai_font_combo = ctk.CTkComboBox(ai_font_frame,
+            values=["Consolas", "Courier New", "Arial", "Segoe UI"],
+            width=130, command=self.update_ai_font_preview)
+        self.ai_font_combo.pack(side="left", padx=5)
+        self.ai_font_combo.set(self.config["ai_font"])
+        
+        # Größen-Slider
+        ctk.CTkLabel(ai_font_frame, text="Größe:", width=40).pack(side="left", padx=(15, 2))
+        self.ai_font_size_slider = ctk.CTkSlider(ai_font_frame, from_=8, to=24, number_of_steps=16, width=100)
+        self.ai_font_size_slider.pack(side="left", padx=3)
+        self.ai_font_size_slider.set(self.config["ai_font_size"])
+        self.ai_font_size_label = ctk.CTkLabel(ai_font_frame, text=f"{self.config['ai_font_size']}px", width=30)
+        self.ai_font_size_label.pack(side="left", padx=3)
+        self.ai_font_size_slider.configure(command=self.update_ai_font_preview)
+        
+        # Preview
+        self.ai_font_preview = ctk.CTkLabel(ai_font_frame, text="🤖 AI Response Text", 
+                                           font=(self.config["ai_font"], self.config["ai_font_size"]),
+                                           text_color="#FFFFFF", width=150)
+        self.ai_font_preview.pack(side="left", padx=10)
+        
+        # System Font mit Größen-Slider
+        system_font_frame = ctk.CTkFrame(font_dropdowns_frame)
+        system_font_frame.pack(fill="x", pady=3)
+        
+        # Label und Dropdown
+        ctk.CTkLabel(system_font_frame, text="System:", width=100).pack(side="left", padx=5)
+        self.system_font_combo = ctk.CTkComboBox(system_font_frame,
+            values=["Arial", "Segoe UI", "Helvetica", "Tahoma"],
+            width=130, command=self.update_system_font_preview)
+        self.system_font_combo.pack(side="left", padx=5)
+        self.system_font_combo.set(self.config["system_font"])
+        
+        # Größen-Slider
+        ctk.CTkLabel(system_font_frame, text="Größe:", width=40).pack(side="left", padx=(15, 2))
+        self.system_font_size_slider = ctk.CTkSlider(system_font_frame, from_=8, to=24, number_of_steps=16, width=100)
+        self.system_font_size_slider.pack(side="left", padx=3)
+        self.system_font_size_slider.set(self.config["system_font_size"])
+        self.system_font_size_label = ctk.CTkLabel(system_font_frame, text=f"{self.config['system_font_size']}px", width=30)
+        self.system_font_size_label.pack(side="left", padx=3)
+        self.system_font_size_slider.configure(command=self.update_system_font_preview)
+        
+        # Preview
+        self.system_font_preview = ctk.CTkLabel(system_font_frame, text="ℹ️ System-Nachricht", 
+                                               font=(self.config["system_font"], self.config["system_font_size"]),
+                                               text_color="#FFFFFF", width=150)
+        self.system_font_preview.pack(side="left", padx=10)
+        
+        # Konsolen-Einstellungen Sektion - Direkt nach Schriftarten
+        console_frame = ctk.CTkFrame(config_scroll)
+        console_frame.pack(fill="x", pady=(10, 15))
+        
+        console_title = ctk.CTkLabel(console_frame, text="⚫ Konsole", font=("Arial", 16, "bold"))
+        console_title.pack(pady=(10, 5))
+        
+        # Konsolen-Farben - Horizontal Layout
+        console_main_frame = ctk.CTkFrame(console_frame)
+        console_main_frame.pack(fill="x", padx=15, pady=5)
+        
+        console_colors_frame = ctk.CTkFrame(console_main_frame)
+        console_colors_frame.pack(side="left", fill="x", expand=True, padx=5)
+        
+        self.console_bg_entry, self.console_bg_preview = self.setup_color_input_with_preview(
+            console_colors_frame, "Hintergrund:", "console_bg", "#000000")
+        self.console_text_entry, self.console_text_preview = self.setup_color_input_with_preview(
+            console_colors_frame, "Text:", "console_text", "#FFFFFF")
+        
+        # Konsolen-Font - Horizontal 
+        console_font_frame = ctk.CTkFrame(console_main_frame)
+        console_font_frame.pack(side="right", padx=5, pady=2)
+        ctk.CTkLabel(console_font_frame, text="Font:", width=40).pack(side="left", padx=2)
+        self.console_font_combo = ctk.CTkComboBox(console_font_frame,
+            values=["Consolas", "Courier New", "Lucida Console", "Monaco"], width=120)
+        self.console_font_combo.pack(side="left", padx=2)
+        self.console_font_combo.set(self.config["console_font"])
+    
+    def open_color_picker(self, entry_widget):
+        """Öffnet einen RGB-Farbwähler und setzt den gewählten Farbwert in das Entry-Feld"""
+        try:
+            # Aktuelle Farbe aus dem Entry-Feld als Startwert verwenden
+            current_color = entry_widget.get()
+            if current_color and current_color.startswith('#'):
+                initial_color = current_color
+            else:
+                initial_color = "#00FF00"  # Standard-Grün
+            
+            # Farbwähler öffnen
+            color = colorchooser.askcolor(
+                color=initial_color,
+                title="🎨 Farbe auswählen",
+                parent=self.root
+            )
+            
+            # Wenn eine Farbe gewählt wurde, aktualisiere das Entry-Feld
+            if color[1]:  # color[1] enthält den Hex-Wert
+                entry_widget.delete(0, 'end')
+                entry_widget.insert(0, color[1].upper())
+                
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler beim Öffnen des Farbwählers: {e}")
+    
+    def create_color_preview(self, parent, color, size=20):
+        """Erstellt ein kleines farbiges Quadrat als Farb-Preview"""
+        preview = ctk.CTkLabel(parent, text="", width=size, height=size, 
+                              fg_color=color, corner_radius=3)
+        return preview
+    
+    def update_color_preview(self, preview_label, entry_widget):
+        """Aktualisiert das Farb-Preview basierend auf dem Entry-Wert"""
+        try:
+            color = entry_widget.get()
+            if color and color.startswith('#'):
+                preview_label.configure(fg_color=color)
+            else:
+                preview_label.configure(fg_color="gray")
+        except Exception:
+            preview_label.configure(fg_color="gray")
+    
+    def setup_color_input_with_preview(self, parent, label_text, entry_var_name, default_color):
+        """Erstellt ein kompaktes Farb-Eingabefeld mit Preview"""
+        frame = ctk.CTkFrame(parent)
+        frame.pack(side="left", padx=5, pady=2, fill="x", expand=True)
+        
+        # Label
+        ctk.CTkLabel(frame, text=label_text, width=80).pack(side="left", padx=2)
+        
+        # Color Preview
+        color_preview = self.create_color_preview(frame, default_color)
+        color_preview.pack(side="left", padx=2)
+        
+        # Entry Field
+        entry = ctk.CTkEntry(frame, placeholder_text=default_color, width=80)
+        entry.pack(side="left", padx=2)
+        entry.insert(0, self.config[entry_var_name])
+        
+        # Color Picker Button
+        picker_btn = ctk.CTkButton(frame, text="🎨", width=25, height=25,
+                                  command=lambda: self.open_color_picker_with_preview(entry, color_preview))
+        picker_btn.pack(side="left", padx=2)
+        
+        # Bind update event
+        entry.bind('<KeyRelease>', lambda e: self.update_color_preview(color_preview, entry))
+        
+        return entry, color_preview
+    
+    def open_color_picker_with_preview(self, entry_widget, preview_label):
+        """Öffnet Color-Picker und aktualisiert Entry + Preview"""
+        try:
+            # Aktuelle Farbe als Startwert verwenden
+            current_color = entry_widget.get()
+            if current_color and current_color.startswith('#'):
+                initial_color = current_color
+            else:
+                initial_color = "#00FF00"
+            
+            # Farbwähler öffnen
+            color = colorchooser.askcolor(
+                color=initial_color,
+                title="🎨 Farbe auswählen",
+                parent=self.root
+            )
+            
+            # Wenn eine Farbe gewählt wurde, aktualisiere Entry und Preview
+            if color[1]:
+                hex_color = color[1].upper()
+                entry_widget.delete(0, 'end')
+                entry_widget.insert(0, hex_color)
+                preview_label.configure(fg_color=hex_color)
+                
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler beim Öffnen des Farbwählers: {e}")
+    
+    def update_user_font_preview(self, value=None):
+        """Aktualisiert User Font Preview"""
+        try:
+            selected_font = self.user_font_combo.get()
+            font_size = int(self.user_font_size_slider.get())
+            self.user_font_size_label.configure(text=f"{font_size}px")
+            self.user_font_preview.configure(font=(selected_font, font_size))
+        except Exception:
+            self.user_font_preview.configure(font=("Courier New", 11))
+    
+    def update_ai_font_preview(self, value=None):
+        """Aktualisiert AI Font Preview"""
+        try:
+            selected_font = self.ai_font_combo.get()
+            font_size = int(self.ai_font_size_slider.get())
+            self.ai_font_size_label.configure(text=f"{font_size}px")
+            self.ai_font_preview.configure(font=(selected_font, font_size))
+        except Exception:
+            self.ai_font_preview.configure(font=("Consolas", 11))
+    
+    def update_system_font_preview(self, value=None):
+        """Aktualisiert System Font Preview"""
+        try:
+            selected_font = self.system_font_combo.get()
+            font_size = int(self.system_font_size_slider.get())
+            self.system_font_size_label.configure(text=f"{font_size}px")
+            self.system_font_preview.configure(font=(selected_font, font_size))
+        except Exception:
+            self.system_font_preview.configure(font=("Arial", 10))
+    
+    def apply_config(self):
+        """Wendet die neuen Konfigurationen an"""
+        try:
+            # Update Config-Dictionary
+            self.config["user_bg_color"] = self.user_bg_entry.get() or "#003300"
+            self.config["user_text_color"] = self.user_text_entry.get() or "#00FF00"
+            self.config["ai_bg_color"] = self.ai_bg_entry.get() or "#1E3A5F"
+            self.config["ai_text_color"] = self.ai_text_entry.get() or "white"
+            self.config["system_bg_color"] = self.system_bg_entry.get() or "#722F37"
+            self.config["system_text_color"] = self.system_text_entry.get() or "white"
+            
+            # Individuelle Schriftarten und Größen
+            self.config["user_font"] = self.user_font_combo.get()
+            self.config["user_font_size"] = int(self.user_font_size_slider.get())
+            self.config["ai_font"] = self.ai_font_combo.get()
+            self.config["ai_font_size"] = int(self.ai_font_size_slider.get())
+            self.config["system_font"] = self.system_font_combo.get()
+            self.config["system_font_size"] = int(self.system_font_size_slider.get())
+            
+            self.config["console_bg"] = self.console_bg_entry.get() or "#000000"
+            self.config["console_text"] = self.console_text_entry.get() or "#FFFFFF"
+            self.config["console_font"] = self.console_font_combo.get()
+            
+            # Speichere Konfiguration in YAML-Datei
+            self.save_config()
+            
+            # Show success message
+            self.add_to_chat("System", "✅ Konfiguration erfolgreich angewendet und gespeichert! Neue Nachrichten verwenden die neuen Einstellungen.")
+            
+            # Teste Konsolen-Ausgabe mit neuen Einstellungen
+            self.test_console_output()
+            
+        except Exception as e:
+            self.add_to_chat("System", f"❌ Fehler beim Anwenden der Konfiguration: {e}")
+    
+    def test_console_output(self):
+        """Testet die Konsolen-Ausgabe mit den aktuellen Einstellungen"""
+        try:
+            self.console_print("\n" + "="*50, "normal")
+            self.console_print("🎨 KONSOLEN-EINSTELLUNGEN TEST", "info")
+            self.console_print("="*50, "normal")
+            self.console_print(f"Hintergrund: {self.config['console_bg']}", "normal")
+            self.console_print(f"Textfarbe: {self.config['console_text']}", "normal")
+            self.console_print(f"Schriftart: {self.config['console_font']}", "normal")
+            self.console_print("✅ Erfolgsmeldung", "success")
+            self.console_print("⚠️ Warnungsmeldung", "warning") 
+            self.console_print("❌ Fehlermeldung", "error")
+            self.console_print("ℹ️ Informationsmeldung", "info")
+            self.console_print("📝 Normale Ausgabe", "normal")
+            self.console_print("="*50, "normal")
+        except Exception as e:
+            print(f"Konsolen-Test fehlgeschlagen: {e}")
+    
+    def reset_config(self):
+        """Setzt die Konfiguration auf Standardwerte zurück"""
+        # Verwende die neue reset_config_to_defaults() Methode
+        self.reset_config_to_defaults()
+        
+        # Update UI Elements - Farben
+        self.user_bg_entry.delete(0, 'end')
+        self.user_bg_entry.insert(0, self.config["user_bg_color"])
+        self.user_text_entry.delete(0, 'end')
+        self.user_text_entry.insert(0, self.config["user_text_color"])
+        
+        self.ai_bg_entry.delete(0, 'end')
+        self.ai_bg_entry.insert(0, self.config["ai_bg_color"])
+        self.ai_text_entry.delete(0, 'end')
+        self.ai_text_entry.insert(0, self.config["ai_text_color"])
+        
+        self.system_bg_entry.delete(0, 'end')
+        self.system_bg_entry.insert(0, self.config["system_bg_color"])
+        self.system_text_entry.delete(0, 'end')
+        self.system_text_entry.insert(0, self.config["system_text_color"])
+        
+        # Update UI Elements - Individuelle Schriftarten und Größen
+        self.user_font_combo.set(self.config["user_font"])
+        self.user_font_size_slider.set(self.config["user_font_size"])
+        self.ai_font_combo.set(self.config["ai_font"])
+        self.ai_font_size_slider.set(self.config["ai_font_size"])
+        self.system_font_combo.set(self.config["system_font"])
+        self.system_font_size_slider.set(self.config["system_font_size"])
+        
+        # Update Previews
+        self.update_user_font_preview()
+        self.update_ai_font_preview()
+        self.update_system_font_preview()
+        
+        # Konsole
+        self.console_bg_entry.delete(0, 'end')
+        self.console_bg_entry.insert(0, self.config["console_bg"])
+        self.console_text_entry.delete(0, 'end')
+        self.console_text_entry.insert(0, self.config["console_text"])
+        self.console_font_combo.set(self.config["console_font"])
+        
+        self.add_to_chat("System", "🔄 Konfiguration auf Standardwerte zurückgesetzt und gespeichert!")
     
     def check_ollama_status(self):
         """Prüft Ollama-Status und lädt Modelle"""
@@ -768,6 +1531,12 @@ class LLMMessenger:
         # Reset Stop-Flag
         self.generation_stopped = False
         
+        # Nachricht zur Historie hinzufügen (nur wenn nicht leer)
+        if message and message not in self.message_history:
+            self.message_history.append(message)
+        # Reset Historie-Index
+        self.history_index = -1
+        
         # Nachricht anzeigen
         self.add_to_chat("Sie", message)
         self.message_entry.delete(0, 'end')
@@ -790,10 +1559,8 @@ class LLMMessenger:
                 
                 if response_stream:
                     full_response = ""
-                    self.response_message_widget = None
-                    self.current_response_text = ""  # Reset für neue Antwort
                     
-                    # Echte progressive Anzeige - nur neue Tokens anhängen
+                    # Sammle alle Tokens
                     for chunk in response_stream:
                         # Stop-Check
                         if self.generation_stopped:
@@ -804,28 +1571,17 @@ class LLMMessenger:
                             content = chunk['message'].get('content', '')
                             if content:
                                 full_response += content
-                                
-                                # Finde nur die NEUEN Tokens
-                                new_tokens = full_response[len(self.current_response_text):]
-                                
-                                if new_tokens:  # Nur wenn wirklich neue Tokens da sind
-                                    def append_new_tokens(tokens=new_tokens):
-                                        if self.response_message_widget is None:
-                                            # Erste Tokens: Entferne "Denkt..." und starte Antwort
-                                            self.remove_last_message()
-                                            # Formatiere nur die ersten Tokens
-                                            formatted_content = self.format_ai_response(tokens)
-                                            self.response_message_widget = self.add_to_chat(f"🤖 {self.current_model}", formatted_content)
-                                            self.current_response_text = tokens
-                                        else:
-                                            # Weitere Tokens: Hänge NUR neue an
-                                            self.append_to_last_message(tokens)
-                                            self.current_response_text += tokens
-                                    
-                                    self.root.after(0, append_new_tokens)
                     
-                    # Chat-Historie aktualisieren
+                    # Am Ende: Entferne "Denkt..." und zeige vollständige Antwort
                     if full_response and not self.generation_stopped:
+                        def show_final_response():
+                            self.remove_last_message()
+                            formatted_content = self.format_ai_response(full_response)
+                            self.add_to_chat(f"🤖 {self.current_model}", formatted_content)
+                        
+                        self.root.after(0, show_final_response)
+                        
+                        # Chat-Historie aktualisieren
                         self.chat_history.append({"role": "user", "content": message})
                         self.chat_history.append({"role": "assistant", "content": full_response})
                     
@@ -839,6 +1595,50 @@ class LLMMessenger:
         # Thread starten und speichern
         self.current_generation_thread = threading.Thread(target=get_response, daemon=True)
         self.current_generation_thread.start()
+    
+    def navigate_history_up(self, event=None):
+        """Navigiert in der Nachrichten-Historie nach oben (ältere Nachrichten)"""
+        if not self.message_history:
+            return "break"  # Verhindert Standard-Verhalten
+        
+        # Wenn wir am Ende der Historie sind, gehe zum neuesten Eintrag
+        if self.history_index <= 0:
+            self.history_index = len(self.message_history) - 1
+        else:
+            self.history_index -= 1
+        
+        # Setze die Nachricht ins Eingabefeld
+        message = self.message_history[self.history_index]
+        self.message_entry.delete(0, 'end')
+        self.message_entry.insert(0, message)
+        
+        return "break"  # Verhindert Standard-Verhalten der Pfeiltaste
+    
+    def navigate_history_down(self, event=None):
+        """Navigiert in der Nachrichten-Historie nach unten (neuere Nachrichten)"""
+        if not self.message_history:
+            return "break"
+        
+        # Wenn wir am Anfang der Historie sind oder keine Auswahl haben
+        if self.history_index < 0 or self.history_index >= len(self.message_history) - 1:
+            # Lösche das Eingabefeld (neueste "Nachricht" ist leeres Feld)
+            self.message_entry.delete(0, 'end')
+            self.history_index = -1
+        else:
+            self.history_index += 1
+            # Setze die Nachricht ins Eingabefeld
+            message = self.message_history[self.history_index]
+            self.message_entry.delete(0, 'end')
+            self.message_entry.insert(0, message)
+        
+        return "break"  # Verhindert Standard-Verhalten der Pfeiltaste
+    
+    def on_key_press(self, event=None):
+        """Wird bei jeder Tasteneingabe aufgerufen - reset Historie-Index wenn getippt wird"""
+        # Reset Historie-Index wenn der Benutzer tippt (außer bei Pfeiltasten)
+        if event and event.keysym not in ['Up', 'Down']:
+            self.history_index = -1
+        return None  # Normale Tastatureingabe fortsetzen
     
     def stop_generation(self):
         """Stoppt die aktuelle Generation oder den Download sofort"""
@@ -900,164 +1700,45 @@ class LLMMessenger:
         
         return '\n\n'.join(formatted_paragraphs)
     
+    def add_to_chat(self, sender, message):
+        """Fügt eine Chat-Bubble zum Chat hinzu"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        # Erstelle neue Chat-Bubble mit aktueller Config
+        bubble = ChatBubble(
+            self.chat_display_frame,
+            sender=sender,
+            message=message,
+            timestamp=timestamp,
+            app_config=self.config
+        )
+        
+        # Füge Bubble zur Liste hinzu
+        self.chat_bubbles.append(bubble)
+        
+        # Scrolle nach unten
+        self.chat_display_frame._parent_canvas.after(100, 
+            lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
+        
+        return bubble
+    
     def add_thinking_indicator(self):
         """Zeigt dezenten Denkprozess-Indikator an"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        thinking_text = f"[{timestamp}] 🤖 {self.current_model}\n```\n💭 Verarbeitet Ihre Anfrage...\n```\n\n"
-        self.chat_display.insert("end", thinking_text)
-        self.chat_display.see("end")
-        self.last_message_start = self.chat_display.index("end-2c linestart")
-        self.last_sender = f"🤖 {self.current_model}"
-        return self.last_message_start
-    
-    def add_to_chat(self, sender, message):
-        """Fügt eine Nachricht zum Chat hinzu mit verbesserter Formatierung"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        
-        if sender == "Sie":
-            formatted = f"[{timestamp}] 👤 Sie:\n{message}\n\n"
-            self.chat_display.insert("end", formatted)
-        elif sender == "System":
-            formatted = f"[{timestamp}] ℹ️  System: {message}\n\n"
-            self.chat_display.insert("end", formatted)
-        else:
-            # AI-Antwort mit strukturierter Formatierung
-            formatted_content = self.format_ai_response(message)
-            formatted = f"[{timestamp}] {sender}:\n{formatted_content}\n\n"
-            self.chat_display.insert("end", formatted)
-        
-        self.chat_display.see("end")
-        self.last_message_start = self.chat_display.index("end-2c linestart")
-        return self.last_message_start
-    
-    def update_last_message(self, new_content):
-        """Aktualisiert die letzte Nachricht mit neuem Inhalt (für progressive Anzeige)"""
-        if hasattr(self, 'last_message_start') and self.last_message_start:
-            try:
-                # Entferne nur den Inhalt der letzten Nachricht, nicht den Timestamp/Header
-                current_content = self.chat_display.get(self.last_message_start, "end")
-                
-                # Finde den Start des eigentlichen Nachrichteninhalts (nach dem Header)
-                lines = current_content.split('\n')
-                if len(lines) > 1:
-                    # Header behalten, nur Inhalt ersetzen
-                    header_line = lines[0]  # z.B. "[14:30:25] 🤖 llama2:13b:"
-                    
-                    # Lösche die alte Nachricht
-                    self.chat_display.delete(self.last_message_start, "end")
-                    
-                    # Formatiere den neuen Inhalt
-                    formatted_content = self.format_ai_response(new_content)
-                    
-                    # Füge Header + neuen Inhalt hinzu
-                    updated_message = f"{header_line}\n{formatted_content}\n\n"
-                    self.chat_display.insert(self.last_message_start, updated_message)
-                    self.chat_display.see("end")
-                    
-            except Exception as e:
-                # Fallback: Einfach anhängen falls Update fehlschlägt
-                print(f"Update-Fehler: {e}")
-                formatted_content = self.format_ai_response(new_content)
-                self.chat_display.insert("end", formatted_content)
-                self.chat_display.see("end")
-    
-    def append_to_last_message(self, new_tokens):
-        """Hängt NUR neue Tokens an die letzte Nachricht an (echtes Streaming)"""
-        try:
-            # Formatiere die neuen Tokens (ohne komplettes Re-Format)
-            formatted_new_tokens = new_tokens
-            
-            # Füge die neuen Tokens direkt am Ende der letzten Nachricht hinzu
-            # Gehe zum Ende der letzten Nachricht (vor dem abschließenden \n\n)
-            end_pos = self.chat_display.index("end-1c")
-            
-            # Suche den Punkt vor den letzten beiden Newlines
-            current_content = self.chat_display.get("1.0", end_pos)
-            
-            # Finde die Position zum Anhängen (vor den letzten \n\n)
-            if current_content.endswith('\n\n'):
-                insert_pos = self.chat_display.index("end-3c")  # Vor \n\n
-            else:
-                insert_pos = self.chat_display.index("end-1c")  # Am Ende
-            
-            # Füge nur die neuen Tokens hinzu
-            self.chat_display.insert(insert_pos, formatted_new_tokens)
-            self.chat_display.see("end")
-            
-        except Exception as e:
-            # Fallback: Anhängen am Ende
-            print(f"Append-Fehler: {e}")
-            self.chat_display.insert("end-1c", new_tokens)
-            self.chat_display.see("end")
-    
-    def update_streaming_response(self, sender, content):
-        """Legacy-Methode für Kompatibilität - leitet an smarte Version weiter"""
-        self.update_streaming_response_smart(sender, content)
-    
-    def update_streaming_response_smart(self, sender, content):
-        """Intelligente Streaming-Antwort Updates - Anti-Redundanz für GUI"""
-        # Entferne die letzte Antwort nur wenn sie vom selben Sender ist
-        try:
-            if hasattr(self, 'last_message_start') and hasattr(self, 'last_sender'):
-                if self.last_sender == sender:
-                    self.chat_display.delete(self.last_message_start, "end")
-        except:
-            pass
-        
-        # Verwende einen FESTEN Timestamp für diese Streaming-Session
-        if not hasattr(self, 'current_stream_timestamp'):
-            self.current_stream_timestamp = datetime.now().strftime("%H:%M:%S")
-        
-        # Zeige nur die letzten ~200 Zeichen für bessere Performance
-        display_content = content
-        if len(content) > 200:
-            # Zeige "..." + letzte 190 Zeichen
-            display_content = "..." + content[-190:]
-        
-        # Formatiere AI-Antwort strukturiert
-        formatted_content = self.format_ai_response(display_content)
-        
-        # Füge aktualisierte Antwort mit FESTEM Timestamp hinzu
-        formatted = f"[{self.current_stream_timestamp}] {sender}:\n{formatted_content}\n\n"
-        self.chat_display.insert("end", formatted)
-        self.chat_display.see("end")
-        self.last_message_start = self.chat_display.index("end-2c linestart")
-        self.last_sender = sender
-    
-    def finalize_streaming_response(self, sender, content):
-        """Finalisiert die Streaming-Antwort mit komplettem Inhalt"""
-        # Entferne die letzte temporäre Antwort
-        try:
-            if hasattr(self, 'last_message_start') and hasattr(self, 'last_sender'):
-                if self.last_sender == sender:
-                    self.chat_display.delete(self.last_message_start, "end")
-        except:
-            pass
-        
-        # Verwende den ursprünglichen Stream-Timestamp
-        timestamp = getattr(self, 'current_stream_timestamp', datetime.now().strftime("%H:%M:%S"))
-        
-        # Formatiere komplette AI-Antwort strukturiert
-        formatted_content = self.format_ai_response(content)
-        
-        # Füge finale vollständige Antwort hinzu
-        formatted = f"[{timestamp}] {sender}:\n{formatted_content}\n\n"
-        self.chat_display.insert("end", formatted)
-        self.chat_display.see("end")
-        self.last_message_start = self.chat_display.index("end-2c linestart")
-        self.last_sender = sender
-        
-        # Reset Stream-Timestamp für nächste Session
-        if hasattr(self, 'current_stream_timestamp'):
-            delattr(self, 'current_stream_timestamp')
+        thinking_message = "💭 Verarbeitet Ihre Anfrage..."
+        bubble = self.add_to_chat(f"🤖 {self.current_model}", thinking_message)
+        self.current_thinking_bubble = bubble
+        return bubble
     
     def remove_last_message(self):
-        """Entfernt die letzte Nachricht"""
-        try:
-            if hasattr(self, 'last_message_start'):
-                self.chat_display.delete(self.last_message_start, "end")
-        except:
-            pass
+        """Entfernt die letzte Nachricht (Thinking-Indikator)"""
+        if hasattr(self, 'current_thinking_bubble') and self.current_thinking_bubble:
+            try:
+                self.current_thinking_bubble.destroy()
+                if self.current_thinking_bubble in self.chat_bubbles:
+                    self.chat_bubbles.remove(self.current_thinking_bubble)
+            except:
+                pass
+            self.current_thinking_bubble = None
     
     def run(self):
         """Startet die Anwendung"""
