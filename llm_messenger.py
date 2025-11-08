@@ -1398,7 +1398,9 @@ class LLMMessenger:
         # Session persistent speichern mit Feedback
         self.save_session_with_feedback()
         
+
         self.console_print(f"✅ Neue Session erstellt: {session_id}", "success")
+
 
     def debug_session_analysis(self):
         """Debug-Funktion zur Analyse von Session-Problemen"""
@@ -1625,12 +1627,14 @@ class LLMMessenger:
         
         session_data["messages"] = messages
         
-        # Session-Datei speichern: Nur nach Session-ID benennen
-        session_file = os.path.join(self.sessions_dir, f"{self.current_session_id}.json")
+        # Session-Datei speichern: Name am Anfang, dann _session_<SessionID>.json
+        session_name = self.sessions[self.current_session_id].get("name", "")
+        safe_name = "_".join(session_name.split()).replace("/", "_").replace("\\", "_")
+        session_file = os.path.join(self.sessions_dir, f"{safe_name}_session_{self.current_session_id}.json")
 
-        # Lösche ggf. alte Dateien mit anderem Namen/Schema für diese Session-ID
+        # Lösche ggf. alte Dateien mit anderer Benennung für diese Session-ID
         for fname in os.listdir(self.sessions_dir):
-            if fname.endswith(f"_session_{self.current_session_id}.json") and fname != f"{self.current_session_id}.json":
+            if fname.endswith(f"_session_{self.current_session_id}.json") and fname != f"{safe_name}_session_{self.current_session_id}.json":
                 try:
                     os.remove(os.path.join(self.sessions_dir, fname))
                 except Exception:

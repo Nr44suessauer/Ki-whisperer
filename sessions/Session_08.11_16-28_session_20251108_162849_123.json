@@ -1,22 +1,22 @@
 {
-  "session_id": "20251108_161210_303",
-  "name": "Session 08.11 16-12",
-  "created_at": "2025-11-08T16:12:10.303502",
-  "last_modified": "2025-11-08T16:12:24.388240",
+  "session_id": "20251108_162849_123",
+  "name": "Session 08.11 16-28",
+  "created_at": "2025-11-08T16:28:49.123586",
+  "last_modified": "2025-11-08T16:33:18.772406",
   "model": "llama2:7b",
   "bias": "",
   "messages": [
     {
-      "timestamp": "16:12:20",
+      "timestamp": "16:33:15",
       "sender": "Sie",
       "message": "hi"
     },
     {
-      "timestamp": "16:12:24",
+      "timestamp": "16:33:18",
       "sender": "🤖 llama2:7b",
       "message": "Hello! It's nice to meet you. Is there something I can help you with or would you like to chat?"
     }
   ],
   "total_messages": 2,
-  "color": "#ff009f"
+  "color": "#1f538d"
 }
