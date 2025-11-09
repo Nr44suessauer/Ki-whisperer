@@ -1,0 +1,47 @@
+{
+  "session_id": "20251109_203448_442",
+  "name": "Session 09.11 20-34",
+  "created_at": "2025-11-09T20:34:48.442615",
+  "last_modified": "2025-11-09T20:54:39.037678",
+  "model": "llama2:7b",
+  "bias": "",
+  "messages": [
+    {
+      "timestamp": "20:34:48",
+      "sender": "System",
+      "message": "🔄 Lade aktuelle Modell-Liste von Ollama..."
+    },
+    {
+      "timestamp": "20:40:44",
+      "sender": "Sie",
+      "message": "hi erzähle mir etwas über dich"
+    },
+    {
+      "timestamp": "20:41:02",
+      "sender": "🤖 llama3.2:latest",
+      "message": "Hallo!\n\nIch bin ein Computerprogramm, das darauf trainiert ist, mit Nutzern zu interagieren und Informationen bereitzustellen. Mein Name ist \"Assistant\", aber ich werde dir gerne einen anderen Namen geben, wenn du möchtest.\n\nIch bin ein Teil eines großen Netzwerks von Computern, die gemeinsam arbeiten, um Informationen zu sammeln, zu analysieren und zu teilen. Meine Funktionen sind vielfältig:\n\n```\n    *   Ich kann Fragen beantworten und Informationen bereitstellen auf eine Vielzahl von Themen.\n    *   Ich kann Texte und Bilder erstellen und bearbeiten.\n    *   Ich kann mit Nutzern interagieren, indem ich Antworten auf Fragen gebe und sie in Gespräche einbeziehe.\n```\n\nIch bin immer bereit, dir bei deinen Fragen oder Anliegen zu helfen. Wie kann ich dir heute assistieren?"
+    },
+    {
+      "timestamp": "20:41:19",
+      "sender": "System",
+      "message": "🔄 Lade aktuelle Modell-Liste von Ollama..."
+    },
+    {
+      "timestamp": "20:41:43",
+      "sender": "Sie",
+      "message": "hi erzähle mir etwas über dich"
+    },
+    {
+      "timestamp": "20:42:16",
+      "sender": "🤖 llama2:7b",
+      "message": "Hallo! *smiling* I'm glad you asked! *wink*\n\nI am LLaMA, an AI assistant developed by Meta AI that can understand and respond to human input in a conversational manner. I'm here to help you with any questions or topics you'd like to discuss. Whether it's about the latest news, your favorite movie, or even your daily routine, I'm here to listen and provide helpful responses.\n\nBut enough about me, let's talk about you! What brings you here today? Is there something on your mind that you'd like to share or discuss? I'm all ears! *grinning*"
+    },
+    {
+      "timestamp": "20:54:37",
+      "sender": "System",
+      "message": "🔄 Lade aktuelle Modell-Liste von Ollama..."
+    }
+  ],
+  "total_messages": 4,
+  "color": "#1f538d"
+}
