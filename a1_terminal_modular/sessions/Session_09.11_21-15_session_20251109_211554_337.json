@@ -2,16 +2,10 @@
   "session_id": "20251109_211554_337",
   "name": "Session 09.11 21-15",
   "created_at": "2025-11-09T21:15:54.337262",
-  "last_modified": "2025-11-09T22:13:51.814126",
+  "last_modified": "2025-11-09T22:47:34.312012",
   "model": "llama3.2:latest",
   "bias": "",
-  "messages": [
-    {
-      "timestamp": "21:18:33",
-      "sender": "System",
-      "message": "🔄 Lade aktuelle Modell-Liste von Ollama..."
-    }
-  ],
+  "messages": [],
   "total_messages": 0,
-  "color": "#1f538d"
+  "color": "#2B8A3E"
 }

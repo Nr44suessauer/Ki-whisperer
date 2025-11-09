@@ -39,7 +39,7 @@ bubble_colors:
   user_text_color: '#00FF00'
 compact_mode: true
 console: null
-show_system_messages: true
+show_system_messages: false
 show_timestamps: true
 system_bg_color: '#722F37'
 system_font: Arial
@@ -50,8 +50,8 @@ ui_bg_color: '#1a1a1a'
 ui_bias_font_size: 9
 ui_bias_height: 60
 ui_border_color: '#3a3a3a'
-ui_button_height: 25
-ui_button_width: 60
+ui_button_height: 60
+ui_button_width: 150
 ui_chat_bubble_corner_radius: 20
 ui_chat_bubble_padding_x: 30
 ui_chat_bubble_padding_y: 30

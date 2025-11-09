@@ -1052,36 +1052,18 @@ class A1Terminal:
             )
             session_btn.pack(side="left", fill="both", expand=True, padx=(0, 5))
             
-            # Button-Container für Rename und Color
-            button_container = ctk.CTkFrame(session_container)
-            button_container.pack(side="right")
-
-            # Color-Button  
-            session_color = session_data.get("color", "#4A4A4A")  # Standard-Farbe falls keine gesetzt
-            color_btn = ctk.CTkButton(
-                button_container,
-                text="🎨",
-                command=lambda sid=session_id: self.choose_session_color(sid),
-                width=35,
-                height=35,
-                font=("Arial", 12),
-                fg_color=session_color,
-                hover_color="#5A5A5A"
-            )
-            color_btn.pack(side="top", pady=(0, 5))
-
-            # Rename-Button
-            rename_btn = ctk.CTkButton(
-                button_container,
-                text="✏️",
-                command=lambda sid=session_id: self.rename_session(sid),
-                width=35,
-                height=35,
-                font=("Arial", 12),
+            # Quadratischer Zahnrad-Button für Session-Einstellungen (Umbenennen + Farbe)
+            settings_btn = ctk.CTkButton(
+                session_container,
+                text="⚙️",
+                command=lambda sid=session_id: self.show_session_settings(sid),
+                width=75,
+                height=75,
+                font=("Arial", 18),
                 fg_color="#4A4A4A",
                 hover_color="#5A5A5A"
             )
-            rename_btn.pack(side="top")
+            settings_btn.pack(side="right")
     
     def rename_session(self, session_id):
         """Zeigt einen Dialog zum Umbenennen einer Session"""
@@ -1360,6 +1342,208 @@ class A1Terminal:
         cancel_btn.pack(side="left", padx=20, pady=10)
         
         # Initiale Vorschau aktualisieren
+        update_preview()
+    
+    def show_session_settings(self, session_id):
+        """Zeigt einen kombinierten Dialog für Session-Einstellungen (Name + Farbe)"""
+        if session_id not in self.sessions:
+            return
+            
+        session_data = self.sessions[session_id]
+        current_name = session_data.get("name", f"Session {session_id[-8:]}")
+        current_color = session_data.get("color", "#1f538d")
+        
+        # Dialog-Fenster erstellen
+        settings_dialog = ctk.CTkToplevel(self.root)
+        settings_dialog.title("Session-Einstellungen")
+        settings_dialog.geometry("750x700")
+        settings_dialog.transient(self.root)
+        settings_dialog.grab_set()
+        settings_dialog.resizable(False, False)
+        
+        # Dialog zentrieren
+        settings_dialog.update_idletasks()
+        x = (settings_dialog.winfo_screenwidth() // 2) - (750 // 2)
+        y = (settings_dialog.winfo_screenheight() // 2) - (700 // 2)
+        settings_dialog.geometry(f"750x700+{x}+{y}")
+        
+        # Title
+        title_label = ctk.CTkLabel(settings_dialog, text=f"⚙️ Einstellungen: {current_name}", 
+                                  font=("Arial", 18, "bold"))
+        title_label.pack(pady=(20, 10))
+        
+        info_label = ctk.CTkLabel(settings_dialog, text=f"Session ID: {session_id[-8:]}",
+                                 font=("Arial", 10))
+        info_label.pack(pady=(0, 20))
+        
+        # === NAME SECTION ===
+        name_section = ctk.CTkFrame(settings_dialog)
+        name_section.pack(fill="x", padx=30, pady=(0, 20))
+        
+        name_title = ctk.CTkLabel(name_section, text="✏️ Session-Name", 
+                                 font=("Arial", 14, "bold"))
+        name_title.pack(anchor="w", padx=15, pady=(15, 5))
+        
+        name_entry = ctk.CTkEntry(name_section, width=650, height=40, font=("Arial", 12))
+        name_entry.pack(padx=15, pady=(0, 15))
+        name_entry.insert(0, current_name)
+        name_entry.select_range(0, 'end')
+        name_entry.focus()
+        
+        # === COLOR SECTION ===
+        color_section = ctk.CTkFrame(settings_dialog)
+        color_section.pack(fill="both", expand=True, padx=30, pady=(0, 20))
+        
+        color_title = ctk.CTkLabel(color_section, text="🎨 Session-Farbe", 
+                                  font=("Arial", 14, "bold"))
+        color_title.pack(anchor="w", padx=15, pady=(15, 10))
+        
+        # Selected color variable
+        selected_color = tk.StringVar(value=current_color)
+        
+        # Content frame für Farbkreis und Optionen
+        content_frame = tk.Frame(color_section, bg='#2B2B2B')
+        content_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        
+        # Linke Seite: Farbkreis
+        wheel_frame = tk.Frame(content_frame, bg='#2B2B2B')
+        wheel_frame.pack(side="left", padx=(10, 20))
+        
+        color_wheel = ColorWheel(wheel_frame, size=200, initial_color=current_color)
+        color_wheel.pack(pady=10)
+        
+        # Rechte Seite: Vorschau und vordefinierte Farben
+        options_frame = tk.Frame(content_frame, bg='#2B2B2B')
+        options_frame.pack(side="right", fill="both", expand=True)
+        
+        # Vorschau
+        preview_label = ctk.CTkLabel(options_frame, text="Vorschau:", font=("Arial", 12, "bold"))
+        preview_label.pack(pady=(5, 5))
+        
+        preview_box = ctk.CTkFrame(options_frame, width=180, height=60, fg_color=current_color)
+        preview_box.pack(pady=(0, 15))
+        
+        preview_text = ctk.CTkLabel(preview_box, text="Session", font=("Arial", 14, "bold"),
+                                   text_color="#000000")
+        preview_text.place(relx=0.5, rely=0.5, anchor="center")
+        
+        hex_display = ctk.CTkLabel(options_frame, text=current_color, font=("Arial", 10))
+        hex_display.pack(pady=(0, 15))
+        
+        def update_preview(*args):
+            color = selected_color.get()
+            preview_box.configure(fg_color=color)
+            hex_display.configure(text=color)
+        
+        def select_color(color):
+            selected_color.set(color)
+            update_preview()
+        
+        # Bind color wheel
+        color_wheel.set_color_callback(lambda c: select_color(c))
+        color_wheel.canvas.bind('<Button-1>', color_wheel.on_click)
+        color_wheel.canvas.bind('<B1-Motion>', color_wheel.on_drag)
+        color_wheel.set_initial_position()
+        
+        # Vordefinierte Farben
+        colors_label = ctk.CTkLabel(options_frame, text="Schnellauswahl:", font=("Arial", 11, "bold"))
+        colors_label.pack(pady=(0, 5))
+        
+        color_grid = tk.Frame(options_frame, bg='#2B2B2B')
+        color_grid.pack(pady=5)
+        
+        predefined_colors = [
+            ("#1f538d", "Blau"), ("#2B8A3E", "Grün"), ("#C92A2A", "Rot"), ("#F59F00", "Orange"),
+            ("#7C2D12", "Braun"), ("#5F3DC4", "Lila"), ("#0C8599", "Cyan"), ("#4A4A4A", "Grau")
+        ]
+        
+        for i, (color, name) in enumerate(predefined_colors):
+            row = i // 4
+            col = i % 4
+            
+            btn = ctk.CTkButton(
+                color_grid,
+                text=name,
+                command=lambda c=color: select_color(c),
+                fg_color=color,
+                hover_color=color,
+                width=70,
+                height=35,
+                corner_radius=8,
+                font=("Arial", 9, "bold"),
+                text_color="white" if color in ["#4A4A4A", "#1A1A1A", "#7C2D12"] else "black"
+            )
+            btn.grid(row=row, column=col, padx=3, pady=3)
+        
+        # === BUTTONS ===
+        button_frame = ctk.CTkFrame(settings_dialog)
+        button_frame.pack(side="bottom", fill="x", padx=30, pady=20)
+        
+        def save_settings():
+            new_name = name_entry.get().strip()
+            new_color = selected_color.get()
+            
+            changed = False
+            
+            # Name ändern
+            if new_name and new_name != current_name:
+                self.sessions[session_id]["name"] = new_name
+                changed = True
+                
+                # Datei umbenennen
+                old_files = [f for f in os.listdir(self.sessions_dir) if f.endswith(f"_session_{session_id}.json")]
+                old_path = os.path.join(self.sessions_dir, old_files[0]) if old_files else None
+                safe_name = "_".join(new_name.split()).replace("/", "_").replace("\\", "_")
+                new_path = os.path.join(self.sessions_dir, f"{safe_name}_session_{session_id}.json")
+                
+                try:
+                    with open(new_path, 'w', encoding='utf-8') as f:
+                        json.dump(self.sessions[session_id], f, ensure_ascii=False, indent=2)
+                    if old_path and os.path.abspath(old_path) != os.path.abspath(new_path):
+                        os.remove(old_path)
+                except Exception as e:
+                    self.console_print(f"❌ Fehler beim Speichern: {e}", "warning")
+            
+            # Farbe ändern
+            if new_color and new_color != current_color:
+                self.sessions[session_id]["color"] = new_color
+                changed = True
+            
+            # Speichern und UI aktualisieren
+            if changed:
+                self.sessions[session_id]["last_modified"] = datetime.now().isoformat()
+                self.save_session_with_feedback()
+                self.update_session_list()
+                if hasattr(self, 'current_session_id') and self.current_session_id == session_id:
+                    self.update_current_session_display()
+                self.console_print("✅ Session-Einstellungen gespeichert", "success")
+            
+            settings_dialog.destroy()
+        
+        def cancel():
+            settings_dialog.destroy()
+        
+        # Keyboard shortcuts
+        settings_dialog.bind('<Return>', lambda e: save_settings())
+        settings_dialog.bind('<Escape>', lambda e: cancel())
+        
+        save_btn = ctk.CTkButton(button_frame, text="💾 Speichern", 
+                                command=save_settings, 
+                                fg_color="#2B8A3E", 
+                                hover_color="#37A24B",
+                                width=200, height=45,
+                                font=("Arial", 14, "bold"))
+        save_btn.pack(side="left", expand=True, padx=(0, 10))
+        
+        cancel_btn = ctk.CTkButton(button_frame, text="❌ Abbrechen", 
+                                  command=cancel, 
+                                  fg_color="#C92A2A", 
+                                  hover_color="#E03131",
+                                  width=200, height=45,
+                                  font=("Arial", 14, "bold"))
+        cancel_btn.pack(side="right", expand=True, padx=(10, 0))
+        
+        # Initiale Vorschau
         update_preview()
     
     def compress_chat_history(self, history, max_entries=None):
@@ -2351,8 +2535,9 @@ class A1Terminal:
                 self.console_print(f"🎨 {updated_count} Chat-Bubbles mit neuer Konfiguration aktualisiert", "info")
                 
                 # Scrolle den Chat-Bereich nach unten, um Updates sichtbar zu machen
-                self.chat_display_frame._parent_canvas.after(100, 
-                    lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
+                if self.config.get("auto_scroll_chat", True):
+                    self.chat_display_frame._parent_canvas.after(100, 
+                        lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
                     
         except Exception as e:
             self.console_print(f"❌ Fehler beim Aktualisieren der Chat-Bubbles: {e}", "error")
@@ -2670,8 +2855,9 @@ class A1Terminal:
             self.update_session_list()
             self.update_current_session_display()
             # Scrolle ans Ende der Chat-Konsole (falls vorhanden)
-            if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
-                self.chat_display_frame._parent_canvas.yview_moveto(1.0)
+            if self.config.get("auto_scroll_chat", True):
+                if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
+                    self.chat_display_frame._parent_canvas.yview_moveto(1.0)
         
         # UI während Generation anpassen
         self.stop_btn.configure(state="normal")
@@ -2792,8 +2978,9 @@ class A1Terminal:
         if session_empty:
             self.update_session_list()
             self.update_current_session_display()
-            if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
-                self.chat_display_frame._parent_canvas.yview_moveto(1.0)
+            if self.config.get("auto_scroll_chat", True):
+                if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
+                    self.chat_display_frame._parent_canvas.yview_moveto(1.0)
         
         # UI während Generation anpassen
         if hasattr(self, 'stop_btn'):
@@ -3148,8 +3335,9 @@ class A1Terminal:
                     last_msg["timestamp"] = timestamp  # Aktualisiere Timestamp
                     
             # Scrolle nach unten
-            self.chat_display_frame._parent_canvas.after(100, 
-                lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
+            if self.config.get("auto_scroll_chat", True):
+                self.chat_display_frame._parent_canvas.after(100, 
+                    lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
             
             # Auto-Save für aktualisierte Nachricht
             self.auto_save_session()
@@ -3183,45 +3371,48 @@ class A1Terminal:
             self.auto_save_session()
         
         # Scrolle nach unten
-        self.chat_display_frame._parent_canvas.after(100, 
-            lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
+        if self.config.get("auto_scroll_chat", True):
+            self.chat_display_frame._parent_canvas.after(100, 
+                lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
         
         return bubble
     
     def scroll_to_last_message(self):
         """Scrollt zur letzten Nachricht in der Chat-Ansicht"""
         try:
-            if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
-                # Zuerst das Layout vollständig aktualisieren
-                self.chat_display_frame.update_idletasks()
-                self.chat_display_frame._parent_canvas.update_idletasks()
-                
-                # Dann zur letzten Nachricht scrollen
-                self.chat_display_frame._parent_canvas.yview_moveto(1.0)
-                
-                # Nach kurzer Verzögerung nochmals scrollen für bessere Zuverlässigkeit
-                self.root.after(50, lambda: self.force_scroll_to_bottom())
-                
-                self.console_print("📜 Zur letzten Nachricht gescrollt", "info")
+            if self.config.get("auto_scroll_chat", True):
+                if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
+                    # Zuerst das Layout vollständig aktualisieren
+                    self.chat_display_frame.update_idletasks()
+                    self.chat_display_frame._parent_canvas.update_idletasks()
+                    
+                    # Dann zur letzten Nachricht scrollen
+                    self.chat_display_frame._parent_canvas.yview_moveto(1.0)
+                    
+                    # Nach kurzer Verzögerung nochmals scrollen für bessere Zuverlässigkeit
+                    self.root.after(50, lambda: self.force_scroll_to_bottom())
+                    
+                    self.console_print("📜 Zur letzten Nachricht gescrollt", "info")
         except Exception as e:
             self.console_print(f"❌ Fehler beim Scrollen zur letzten Nachricht: {e}", "error")
     
     def force_scroll_to_bottom(self):
         """Erzwingt das Scrollen zum Ende der Chat-Ansicht"""
         try:
-            if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
-                # Vollständige Layout-Aktualisierung
-                self.chat_display_frame.update()
-                self.chat_display_frame._parent_canvas.update()
-                
-                # Zum Ende scrollen
-                self.chat_display_frame._parent_canvas.yview_moveto(1.0)
-                
-                # Canvas-Größe neu berechnen
-                self.chat_display_frame._parent_canvas.configure(scrollregion=self.chat_display_frame._parent_canvas.bbox("all"))
-                
-                # Nochmals zum Ende
-                self.chat_display_frame._parent_canvas.yview_moveto(1.0)
+            if self.config.get("auto_scroll_chat", True):
+                if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
+                    # Vollständige Layout-Aktualisierung
+                    self.chat_display_frame.update()
+                    self.chat_display_frame._parent_canvas.update()
+                    
+                    # Zum Ende scrollen
+                    self.chat_display_frame._parent_canvas.yview_moveto(1.0)
+                    
+                    # Canvas-Größe neu berechnen
+                    self.chat_display_frame._parent_canvas.configure(scrollregion=self.chat_display_frame._parent_canvas.bbox("all"))
+                    
+                    # Nochmals zum Ende
+                    self.chat_display_frame._parent_canvas.yview_moveto(1.0)
                 
         except Exception as e:
             self.console_print(f"❌ Fehler beim erzwungenen Scrollen: {e}", "error")
