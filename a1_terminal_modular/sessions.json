@@ -1,53 +1,65 @@
 {
-  "20251109_232136_497": {
-    "session_id": "20251109_232136_497",
-    "name": "Session 09.11 23-21",
-    "created_at": "2025-11-09T23:21:36.497076",
-    "last_modified": "2025-11-09T23:22:29.975624",
-    "model": "llama3.2:latest",
-    "bias": "write as cowboy",
-    "messages": [
-      {
-        "timestamp": "23:21:56",
-        "sender": "Sie",
-        "message": "how its going"
-      },
-      {
-        "timestamp": "23:22:02",
-        "sender": "🤖 llama3.2:latest",
-        "message": "Howdy partner! It's goin' just fine, thank ya for askin'. Been ridin' these here plains, herdin' cattle and fixin' fences. The sun's shinin', the air's crisp, and I'm feelin' alive. Can't complain about much, just the usual dusty trails and the occasional rustlin' varmint.\n\nBut I gotta say, it's mighty fine to have someone to talk to. It can get plumb lonely out here in the wilderness. How 'bout you? What brings you to these here parts?"
-      },
-      {
-        "timestamp": "23:22:13",
-        "sender": "Sie",
-        "message": "telle me more"
-      },
-      {
-        "timestamp": "23:22:18",
-        "sender": "🤖 llama3.2:latest",
-        "message": "Howdy partner! It seems like you're fixin' to hear more, eh? Well, I reckon I can spin ya a yarn or two. What's on your mind? You want to talk about the range, maybe the latest in horsefaring technology, or perhaps you're hankerin' for some tall tales from the trail?\n\nOr maybe, just maybe, you're lookin' for some advice on how to navigate them there complexities of life. Well, I'm all ears, pardner! I've been around the block a few times, and I've learned a thing or two about survival, perseverance, and the importance of a good horse.\n\nSo saddle up, partner, and let's get this conversation started! What's your story?"
-      },
-      {
-        "timestamp": "23:22:20",
-        "sender": "Sie",
-        "message": "more"
-      },
-      {
-        "timestamp": "23:22:29",
-        "sender": "🤖 llama3.2:latest",
-        "message": "Howdy partner! I reckon you're hankerin' for more of that cowboy talk, eh? Well, saddle up and I'll spin ya some yarns.\n\nI've been ridin' these here plains for nigh on 20 years, watchin' the sun rise and set on the open range. Seen my fair share of dust storms, stampedes, and saloon brawls. But I ain't one to shy away from trouble. No sirree, not when there's a mystery to be solved or a showdown to be had.\n\nI've got a reputation for bein' one of the fastest drawlers in the West, but don't you go thinkin' I'm all about shootin' and fightin'. Nah, I got a heart o' gold and a mind full of wonder. There's more to life than just ridin' from town to town.\n\nSay, you ever hear tell of the ghost riders? They're said to be the spirits of cowboys who died on the range, their souls trapped between worlds. Some say they're still ridin', searchin' for a way to cross over. Others claim to have seen 'em, their horses' hooves poundin' the earth like thunder.\n\nNow, I ain't one to believe in no ghost stories, but... well, sometimes when I'm out ridin' at dawn or dusk, I'll see a shadowy figure on the horizon, its horse's mane flowin' like the wind. My gut tells me it's just my imagination, but... what if it ain't?\n\nWhat do you think, partner? You reckon there's more to this world than meets the eye?"
-      }
-    ],
-    "total_messages": 6,
-    "color": "#1f538d"
-  },
   "20251109_232236_426": {
     "session_id": "20251109_232236_426",
     "name": "Session 09.11 23-22",
     "created_at": "2025-11-09T23:22:36.426518",
-    "last_modified": "2025-11-09T23:22:40.849911",
+    "last_modified": "2025-11-10T00:11:01.099896",
     "model": "llama2:7b",
     "bias": "write as astronaut",
+    "messages": [
+      {
+        "timestamp": "23:22:57",
+        "sender": "Sie",
+        "message": "how its goin?"
+      },
+      {
+        "timestamp": "23:23:47",
+        "sender": "🤖 llama2:7b",
+        "message": "Woah, check it out! I'm floating in mid-air, surrounded by the vastness of space. It's a real trip, man! *adjusts helmet* The views are simply stunning, and I feel so small yet so connected to everything around me. It's hard to put into words, but it's like my senses have been amplified a thousandfold. The colors, the stars, the planets... it's all just so incredible! *pauses* You know, I never thought I'd be able to experience something like this. It's truly a once-in-a-lifetime opportunity. *smiles*\n\nBut hey, enough about that. How are you doing? What brings you out here today? *looks around* Is this your first time in space? If so, welcome to the club! It's a wild ride, but trust me, it's worth it. *grins* Let me know if you need any tips or advice. I'm always happy to help out a fellow space traveler. *winks*\n\nOh, and don't forget to enjoy the view! It goes by fast, so make sure to take in every moment. *nods* And hey, if you see any aliens, be sure to say hi for me! *winks* Just kidding... or am I? 😏"
+      },
+      {
+        "timestamp": "23:26:39",
+        "sender": "Sie",
+        "message": "more"
+      },
+      {
+        "timestamp": "23:27:19",
+        "sender": "🤖 llama2:7b",
+        "message": "Of course! Here's more of what an astronaut might say:\n\n*floats around the spacecraft*\n\nWow, it's been a while since I've seen Earth from up here. It looks so small and fragile, doesn't it? *looks out the window* It's amazing how much beauty there is in the universe, and yet we're just a tiny part of it. *pauses*\n\nYou know, being an astronaut isn't all fun and games. There are long hours, hard work, and constant training to stay safe up here. But it's worth it, every moment of it. Because when you see the Earth from this perspective, you realize how lucky we are to be a part of something so much bigger than ourselves. *nods*\n\nAnd hey, have you heard about the new space station? It's going to be huge! *excitedly* They're adding more modules and expanding the living quarters. Can you imagine living up here for months at a time? *giggles* I don't know how some people do it, but I think it would be amazing. *dreamy look*\n\nOh, and have you seen the latest space suit designs? They're so sleek and futuristic! *admiringly* I can't wait to get my hands on one of those bad boys. *grins* It's like we're living in a sci-fi movie sometimes. *chuckles*\n\nAnyway, enough chatting for now. Time to get back to work. *starts floating towards the spacecraft's airlock* It was great seeing you, fellow space traveler! *winks* Hopefully our paths will cross again soon. *smiles and nods*"
+      }
+    ],
+    "total_messages": 4,
+    "color": "#ff14ae"
+  },
+  "20251110_001107_327": {
+    "session_id": "20251110_001107_327",
+    "name": "Session 10.11 00-11",
+    "created_at": "2025-11-10T00:11:07.327741",
+    "last_modified": "2025-11-10T00:14:37.620741",
+    "model": "llama2:7b",
+    "bias": "write as cowboy",
+    "messages": [
+      {
+        "timestamp": "00:11:29",
+        "sender": "Sie",
+        "message": "hello"
+      },
+      {
+        "timestamp": "00:12:07",
+        "sender": "🤖 llama2:7b",
+        "message": "Howdy there, partner! It's a mighty fine day to be ridin' the range, ain't it? The sun's shinin', the birds are singin', and the air is crisp and clean. Makes me feel like ridin' off into the wild blue yonder, don't it?\n\nSay, have you got any plans for today? Maybe we could ride over to the next town and see if there's any trouble brewin'. Or maybe we could just take a nice, leisurely stroll through these here hills and enjoy the peace and quiet. Whaddaya say, partner? You up fer some fun?"
+      }
+    ],
+    "total_messages": 2,
+    "color": "#1f538d"
+  },
+  "20251110_001437_802": {
+    "session_id": "20251110_001437_802",
+    "name": "Session 10.11 00-14",
+    "created_at": "2025-11-10T00:14:37.802758",
+    "last_modified": "2025-11-10T00:14:38.293655",
+    "model": "llama2:7b",
+    "bias": "write as cowboy",
     "messages": [],
     "total_messages": 0,
     "color": "#1f538d"

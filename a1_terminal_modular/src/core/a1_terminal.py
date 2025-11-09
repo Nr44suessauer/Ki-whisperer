@@ -318,24 +318,24 @@ class A1Terminal:
         # Delete Button 
         self.delete_btn = ctk.CTkButton(
             model_controls_frame,
-            text="🗑️",
+            text="🗑️ Löschen",
             command=self.delete_selected_model,
             fg_color="red",
             hover_color="darkred",
-            width=self.config.get("ui_model_button_size", 35),
-            font=("Arial", self.config.get("ui_model_label_size", 9))
+            width=100,
+            font=("Arial", 12, "bold")
         )
-        self.delete_btn.pack(side="right", padx=2, pady=2)
+        self.delete_btn.pack(side="right", padx=5, pady=2)
         
         # Refresh Button  
         self.refresh_btn = ctk.CTkButton(
             model_controls_frame,
-            text="🔄",
+            text="🔄 Aktualisieren",
             command=self.refresh_models,
-            width=self.config.get("ui_model_button_size", 35),
-            font=("Arial", self.config.get("ui_model_label_size", 9))
+            width=130,
+            font=("Arial", 12, "bold")
         )
-        self.refresh_btn.pack(side="right", padx=2, pady=2)
+        self.refresh_btn.pack(side="right", padx=5, pady=2)
         
         # Verfügbare Modelle zum Download
         download_frame = ctk.CTkFrame(model_frame)
@@ -360,25 +360,37 @@ class A1Terminal:
         )
         self.available_dropdown.pack(side="left", fill="x", expand=True, padx=(2, 5), pady=2)
         
-        # Download Button
+        # Download Button (direkt nach Dropdown)
         self.download_btn = ctk.CTkButton(
             download_controls_frame,
-            text="⬇️",
+            text="⬇️ Download",
             command=self.download_selected_model,
-            width=self.config.get("ui_model_button_size", 35),
-            font=("Arial", self.config.get("ui_model_label_size", 9))
+            width=120,
+            font=("Arial", 12, "bold")
         )
-        self.download_btn.pack(side="right", padx=2, pady=2)
+        self.download_btn.pack(side="left", padx=5, pady=2)
         
         # Manueller Download Button  
         self.manual_download_btn = ctk.CTkButton(
             download_controls_frame,
-            text="📝",
+            text="💾 Manuell",
             command=self.show_download_dialog,
-            width=self.config.get("ui_model_button_size", 35),
-            font=("Arial", self.config.get("ui_model_label_size", 9))
+            width=110,
+            font=("Arial", 12, "bold")
         )
-        self.manual_download_btn.pack(side="right", padx=2, pady=2)
+        self.manual_download_btn.pack(side="right", padx=5, pady=2)
+        
+        # Ollama Models-Ordner öffnen Button
+        self.models_folder_btn = ctk.CTkButton(
+            download_controls_frame,
+            text="📂 Ordner",
+            command=self.open_ollama_models_folder,
+            width=100,
+            font=("Arial", 12, "bold"),
+            fg_color="#2D5A87",
+            hover_color="#3D6A97"
+        )
+        self.models_folder_btn.pack(side="right", padx=5, pady=2)
         
         # Progress Bar für Downloads (initial versteckt)
         self.progress_frame = ctk.CTkFrame(model_frame)
@@ -438,8 +450,8 @@ class A1Terminal:
             actions_frame,
             text="🗑️ Session löschen",
             command=self.delete_current_session,
-            height=self.config.get("ui_session_button_height", 25),
-            font=("Arial", self.config.get("ui_session_button_font", 9)),
+            height=35,
+            font=("Arial", 12, "bold"),
             fg_color="#C92A2A",
             hover_color="#E03131"
         )
@@ -447,10 +459,10 @@ class A1Terminal:
         
         cleanup_btn = ctk.CTkButton(
             actions_frame,
-            text="🧹 Alle löschen",
+            text="🗑️ Alle löschen",
             command=self.delete_all_sessions,
-            height=self.config.get("ui_session_button_height", 25),
-            font=("Arial", self.config.get("ui_session_button_font", 9)),
+            height=35,
+            font=("Arial", 12, "bold"),
             fg_color="#8B0000",
             hover_color="#A52A2A"
         )
@@ -465,8 +477,8 @@ class A1Terminal:
             debug_frame,
             text="🔍 Debug Sessions",
             command=self.show_session_debug,
-            height=self.config.get("ui_debug_button_height", 30),
-            font=("Arial", self.config.get("ui_debug_button_font", 9)),
+            height=35,
+            font=("Arial", 12, "bold"),
             fg_color="#4A4A4A",
             hover_color="#5A5A5A"
         )
@@ -476,8 +488,8 @@ class A1Terminal:
             debug_frame,
             text="📁 Sessions-Ordner",
             command=self.open_sessions_folder,
-            height=self.config.get("ui_debug_button_height", 30),
-            font=("Arial", self.config.get("ui_debug_button_font", 9)),
+            height=35,
+            font=("Arial", 12, "bold"),
             fg_color="#2D5A87",
             hover_color="#3D6A97"
         )
@@ -707,8 +719,8 @@ class A1Terminal:
             import subprocess
             import os
             
-            # Prüfe ob Sessions-Verzeichnis existiert
-            sessions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
+            # Verwende das gleiche Verzeichnis wie self.sessions_dir
+            sessions_dir = self.sessions_dir
             
             if not os.path.exists(sessions_dir):
                 # Erstelle das Verzeichnis falls es nicht existiert
@@ -721,6 +733,61 @@ class A1Terminal:
             
         except Exception as e:
             self.console_print(f"❌ Fehler beim Öffnen des Sessions-Ordners: {e}", "error")
+
+    def open_ollama_models_folder(self):
+        """Öffnet das Ollama Models-Verzeichnis im Explorer/Finder"""
+        try:
+            import subprocess
+            import os
+            import sys
+            from tkinter import messagebox
+            
+            # Bestimme den Ollama Models-Pfad basierend auf dem Betriebssystem
+            if sys.platform == 'win32':
+                ollama_dir = os.path.join(os.path.expanduser('~'), '.ollama', 'models')
+            elif sys.platform == 'darwin':  # macOS
+                ollama_dir = os.path.join(os.path.expanduser('~'), '.ollama', 'models')
+            else:  # Linux
+                ollama_dir = os.path.join(os.path.expanduser('~'), '.ollama', 'models')
+            
+            # Prüfe ob Verzeichnis existiert
+            if not os.path.exists(ollama_dir):
+                # Fallback: Versuche alternative Pfade
+                alt_paths = [
+                    os.path.join(os.getenv('APPDATA', ''), 'ollama', 'models'),
+                    os.path.join(os.getenv('LOCALAPPDATA', ''), 'ollama', 'models'),
+                    "C:\\Program Files\\Ollama\\models",
+                ]
+                
+                for alt_path in alt_paths:
+                    if os.path.exists(alt_path):
+                        ollama_dir = alt_path
+                        break
+                else:
+                    messagebox.showwarning(
+                        "Ordner nicht gefunden",
+                        f"❌ Ollama Models-Ordner nicht gefunden!\n\n"
+                        f"Erwarteter Pfad:\n{ollama_dir}\n\n"
+                        f"Mögliche Gründe:\n"
+                        f"• Ollama ist nicht installiert\n"
+                        f"• Noch keine Modelle heruntergeladen\n"
+                        f"• Ollama verwendet einen benutzerdefinierten Pfad\n\n"
+                        f"💡 Tipp: Laden Sie zuerst ein Modell herunter."
+                    )
+                    return
+            
+            # Öffne Explorer/Finder mit dem Models-Verzeichnis
+            if sys.platform == 'win32':
+                subprocess.Popen(f'explorer "{ollama_dir}"', shell=True)
+            elif sys.platform == 'darwin':
+                subprocess.Popen(['open', ollama_dir])
+            else:
+                subprocess.Popen(['xdg-open', ollama_dir])
+            
+            self.console_print(f"🤖 Ollama Models-Ordner geöffnet: {ollama_dir}", "success")
+            
+        except Exception as e:
+            self.console_print(f"❌ Fehler beim Öffnen des Ollama Models-Ordners: {e}", "error")
 
     def clear_chat_history(self):
         """Löscht die Chat-Historie für einen frischen Kontext mit dem Model"""
@@ -1679,67 +1746,60 @@ class A1Terminal:
         if not self.current_session_id:
             return
             
-        # Bestätigungs-Dialog
-        result = messagebox.askyesno(
-            "Session löschen",
-            f"Möchten Sie die Session {self.current_session_id} wirklich löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden."
-        )
+        deleted_session_id = self.current_session_id
         
-        if result:
-            deleted_session_id = self.current_session_id
+        # Alle zugehörigen Session-Dateien löschen (unabhängig vom Namen)
+        try:
+            deleted_files = 0
+            for f in os.listdir(self.sessions_dir):
+                if f.endswith(f"_session_{self.current_session_id}.json"):
+                    file_path = os.path.join(self.sessions_dir, f)
+                    try:
+                        os.remove(file_path)
+                        deleted_files += 1
+                    except Exception as e:
+                        self.console_print(f"❌ Fehler beim Löschen der Session-Datei {f}: {e}", "error")
+            if deleted_files == 0:
+                self.console_print(f"⚠️ Keine Session-Datei für {self.current_session_id} gefunden.", "warning")
+        except Exception as e:
+            self.console_print(f"❌ Fehler beim Löschen der Session-Dateien: {e}", "error")
+        
+        # Session aus Speicher entfernen
+        if self.current_session_id in self.sessions:
+            del self.sessions[self.current_session_id]
+        
+        # Sessions persistent speichern
+        try:
+            with open("sessions.json", "w", encoding="utf-8") as f:
+                json.dump(self.sessions, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            self.console_print(f"❌ Fehler beim Speichern der Session-Liste: {e}", "error")
+        
+        self.console_print(f"🗑️ Session gelöscht: {deleted_session_id}", "warning")
+        
+        # UI sofort aktualisieren
+        self.update_session_list()
+        self.update_current_session_display()
+        
+        # Prüfe ob noch andere Sessions vorhanden sind
+        if self.sessions:
+            # Lade die neueste verfügbare Session
+            latest_session = max(self.sessions.keys(), 
+                               key=lambda x: self.sessions[x].get("created_at", ""))
+            self.load_session(latest_session)
+            self.console_print(f"🔄 Gewechselt zu Session: {latest_session}", "info")
+        else:
+            # Alle Sessions gelöscht - Chat leeren aber keine neue Session erstellen
+            self.current_session_id = None
+            self.clear_chat_for_new_session()
             
-            # Alle zugehörigen Session-Dateien löschen (unabhängig vom Namen)
-            try:
-                deleted_files = 0
-                for f in os.listdir(self.sessions_dir):
-                    if f.endswith(f"_session_{self.current_session_id}.json"):
-                        file_path = os.path.join(self.sessions_dir, f)
-                        try:
-                            os.remove(file_path)
-                            deleted_files += 1
-                        except Exception as e:
-                            self.console_print(f"❌ Fehler beim Löschen der Session-Datei {f}: {e}", "error")
-                if deleted_files == 0:
-                    self.console_print(f"⚠️ Keine Session-Datei für {self.current_session_id} gefunden.", "warning")
-            except Exception as e:
-                self.console_print(f"❌ Fehler beim Löschen der Session-Dateien: {e}", "error")
-            
-            # Session aus Speicher entfernen
-            if self.current_session_id in self.sessions:
-                del self.sessions[self.current_session_id]
-            
-            # Sessions persistent speichern
-            try:
-                with open("sessions.json", "w", encoding="utf-8") as f:
-                    json.dump(self.sessions, f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                self.console_print(f"❌ Fehler beim Speichern der Session-Liste: {e}", "error")
-            
-            self.console_print(f"🗑️ Session gelöscht: {deleted_session_id}", "warning")
-            
-            # UI sofort aktualisieren
+            # UI für "keine Session" Zustand anpassen
             self.update_session_list()
             self.update_current_session_display()
             
-            # Prüfe ob noch andere Sessions vorhanden sind
-            if self.sessions:
-                # Lade die neueste verfügbare Session
-                latest_session = max(self.sessions.keys(), 
-                                   key=lambda x: self.sessions[x].get("created_at", ""))
-                self.load_session(latest_session)
-                self.console_print(f"🔄 Gewechselt zu Session: {latest_session}", "info")
-            else:
-                # Alle Sessions gelöscht - Chat leeren aber keine neue Session erstellen
-                self.current_session_id = None
-                self.clear_chat_for_new_session()
-                
-                # UI für "keine Session" Zustand anpassen
-                self.update_session_list()
-                self.update_current_session_display()
-                
-                # BIAS-Feld leeren
-                if hasattr(self, 'session_bias_entry'):
-                    self.session_bias_entry.delete("1.0", "end")
+            # BIAS-Feld leeren
+            if hasattr(self, 'session_bias_entry'):
+                self.session_bias_entry.delete("1.0", "end")
                 
                 # Model zurücksetzen
                 self.current_model = None
@@ -3414,6 +3474,14 @@ class A1Terminal:
                 self.current_thinking_bubble.destroy()
                 if self.current_thinking_bubble in self.chat_bubbles:
                     self.chat_bubbles.remove(self.current_thinking_bubble)
+                
+                # WICHTIG: Entferne auch aus der Session-Daten
+                if self.current_session_id and self.current_session_id in self.sessions:
+                    messages = self.sessions[self.current_session_id].get("messages", [])
+                    # Entferne die letzte Nachricht wenn sie der Thinking-Indikator ist
+                    if messages and "Verarbeitet Ihre Anfrage" in messages[-1].get("message", ""):
+                        messages.pop()
+                        self.sessions[self.current_session_id]["last_modified"] = datetime.now().isoformat()
             except:
                 pass
             self.current_thinking_bubble = None
