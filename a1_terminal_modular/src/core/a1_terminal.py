@@ -2,30 +2,46 @@
 
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, colorchooser
 import os
 import yaml
 import json
+import copy
 import threading
 from datetime import datetime
 
 from src.ui.color_wheel import ColorWheel
 from src.ui.chat_bubble import ChatBubble
 from src.ui.categorized_combobox import CategorizedComboBox
+from src.ui.resizable_pane import ResizablePane
+from src.ui.session_card import SessionCard
+from src.ui.model_selector import ModelSelector
+from src.ui.enhanced_chat_bubble import EnhancedChatBubble
+from src.ui.ultimate_ui import setup_ultimate_ui
 from src.core.ollama_manager import OllamaManager
 
 class A1Terminal:
     """Hauptanwendungsklasse"""
     def __init__(self):
         self._session_just_loaded = False
+        
+        # YAML-Konfigurationsdatei ZUERST laden
+        self.config_file = "ki_whisperer_config.yaml"
+        self.config = self.load_config()
+        
+        # Jetzt root mit Config-Werten erstellen
         self.root = ctk.CTk()
         self.root.title("LLM Messenger - Ollama Chat Client")
-        self.root.geometry("1400x900")  # Etwas größer für bessere Darstellung
+        
+        # Fenstergröße aus Config
+        window_width = self.config.get('ui_window_width', 1400)
+        window_height = self.config.get('ui_window_height', 900)
+        self.root.geometry(f"{window_width}x{window_height}")
         
         # Fenster resizeable machen und Mindestgröße setzen
         self.root.resizable(True, True)
-        self.root.minsize(900, 500)  # Kleinere Mindestgröße für bessere Kompatibilität
-        self.root.maxsize(2560, 1440)  # Maximale Fenstergröße für sehr große Monitore
+        self.root.minsize(900, 500)
+        self.root.maxsize(2560, 1440)
         
         self.ollama = OllamaManager()
         self.current_model = None
@@ -39,11 +55,11 @@ class A1Terminal:
         
         # Progressive Message-Anzeige
         self.response_message_widget = None
-        self.current_response_text = ""  # Verfolge bereits angezeigte Tokens
+        self.current_response_text = ""
         
         # Nachrichten-Historie für Pfeiltasten-Navigation
-        self.message_history = []  # Liste aller gesendeten Nachrichten
-        self.history_index = -1    # Aktueller Index in der Historie (-1 = keine Auswahl)
+        self.message_history = []
+        self.history_index = -1
         
         # Chat-Bubbles für Session Management
         self.chat_bubbles = []
@@ -52,9 +68,8 @@ class A1Terminal:
         self.sessions = {}
         self.current_session_id = None
         self.current_session_bias = ""
-        self.bias_auto_save_timer = None  # Timer für Auto-Save BIAS
+        self.bias_auto_save_timer = None
         
-        # Session Management
         # Sessions-Verzeichnis früh initialisieren
         self.sessions_dir = os.path.join(os.getcwd(), "sessions")
         if not os.path.exists(self.sessions_dir):
@@ -63,19 +78,14 @@ class A1Terminal:
         # Auto-Save Timer für Session-Speicherung
         self.auto_save_timer = None
         
-        # YAML-Konfigurationsdatei
-        self.config_file = "ki_whisperer_config.yaml"
-        
-        # Lade Konfiguration aus YAML-Datei
-        self.config = self.load_config()
-        
+        # Setup UI
         self.setup_ui()
         self.check_ollama_status()
     
     def get_default_config(self):
         """Gibt die Standard-Konfiguration zurück"""
         return {
-            # Bubble-Farben
+            # ========== BUBBLE-FARBEN ==========
             "user_bg_color": "#003300",      # Sie - Hintergrund
             "user_text_color": "#00FF00",    # Sie - Text (Matrix)
             "ai_bg_color": "#1E3A5F",        # AI - Hintergrund
@@ -83,7 +93,7 @@ class A1Terminal:
             "system_bg_color": "#722F37",    # System - Hintergrund
             "system_text_color": "white",    # System - Text
             
-            # Schriftarten und individuelle Größen
+            # ========== SCHRIFTARTEN ==========
             "user_font": "Courier New",      # Sie - Matrix-Font
             "user_font_size": 11,            # Sie - Individuelle Größe
             "ai_font": "Consolas",           # AI - Code-Font
@@ -91,9 +101,77 @@ class A1Terminal:
             "system_font": "Arial",          # System - Standard-Font
             "system_font_size": 10,          # System - Individuelle Größe
             
+            # ========== UI-LAYOUT ==========
+            "ui_session_panel_width": 350,   # Breite des Session-Panels (px)
+            "ui_window_width": 1400,         # Fensterbreite beim Start (px)
+            "ui_window_height": 900,         # Fensterhöhe beim Start (px)
+            "ui_padding_main": 10,           # Hauptabstand außen (px)
+            "ui_padding_content": 5,         # Inhaltsabstand (px)
             
-            # UI-Optionen
-            "show_system_messages": True     # System-Nachrichten im Chat anzeigen
+            # ========== CHAT-DISPLAY ==========
+            "ui_chat_bubble_corner_radius": 10,    # Bubble-Ecken-Radius
+            "ui_chat_bubble_padding_x": 15,        # Bubble horizontal padding
+            "ui_chat_bubble_padding_y": 10,        # Bubble vertikal padding
+            "ui_chat_spacing": 10,                 # Abstand zwischen Bubbles
+            "ui_chat_max_width_ratio": 0.8,        # Max Bubble-Breite (80% des Containers)
+            
+            # ========== INPUT-BEREICH ==========
+            "ui_input_height": 40,           # Höhe des Eingabefelds (px)
+            "ui_input_font_size": 12,        # Schriftgröße im Input
+            "ui_button_width": 100,          # Breite der Buttons (px)
+            "ui_button_height": 40,          # Höhe der Buttons (px)
+            
+            # ========== SESSION-LISTE ==========
+            "ui_session_item_height": 60,    # Höhe eines Session-Items (px)
+            "ui_session_font_size": 11,      # Schriftgröße in Session-Liste
+            "ui_session_spacing": 5,         # Abstand zwischen Sessions
+            
+            # ========== MODEL-SELECTOR ==========
+            "ui_model_dropdown_height": 32,  # Höhe des Model-Dropdowns (px)
+            "ui_model_button_size": 35,      # Größe der Model-Buttons (px)
+            "ui_model_font_size": 11,        # Schriftgröße im Model-Selector
+            "ui_model_title_size": 12,       # Schriftgröße Model-Titel
+            "ui_model_label_size": 9,        # Schriftgröße Model-Labels
+            
+            # ========== SESSION-BUTTONS ==========
+            "ui_session_button_width": 140,  # Breite Session-Buttons
+            "ui_session_button_height": 25,  # Höhe Session-Buttons
+            "ui_session_button_font": 9,     # Schriftgröße Session-Buttons
+            
+            # ========== BIAS-TEXTBOX ==========
+            "ui_bias_height": 60,            # Höhe BIAS-Eingabefeld
+            "ui_bias_font_size": 9,          # Schriftgröße BIAS
+            
+            # ========== DEBUG-BUTTONS ==========
+            "ui_debug_button_height": 30,    # Höhe Debug-Buttons
+            "ui_debug_button_font": 9,       # Schriftgröße Debug-Buttons
+            
+            # ========== TABS ==========
+            "ui_tab_font_size": 13,          # Schriftgröße der Tab-Namen
+            "ui_tab_height": 40,             # Höhe der Tab-Leiste (px)
+            
+            # ========== CONFIG-TAB ==========
+            "ui_config_label_width": 200,    # Breite der Labels im Config
+            "ui_config_slider_width": 300,   # Breite der Sliders
+            "ui_config_entry_width": 200,    # Breite der Eingabefelder
+            
+            # ========== FARBEN & THEME ==========
+            "ui_bg_color": "#1a1a1a",        # Haupthintergrund
+            "ui_fg_color": "#2b2b2b",        # Vordergrund/Panels
+            "ui_accent_color": "#2B8A3E",    # Akzentfarbe (Buttons)
+            "ui_hover_color": "#37A24B",     # Hover-Farbe
+            "ui_text_color": "white",        # Standard-Textfarbe
+            "ui_border_color": "#3a3a3a",    # Border-Farbe
+            
+            # ========== SCROLLBAR ==========
+            "ui_scrollbar_width": 12,        # Breite der Scrollbar (px)
+            "ui_scrollbar_corner_radius": 6, # Scrollbar Ecken-Radius
+            
+            # ========== ALLGEMEINE OPTIONEN ==========
+            "show_system_messages": True,    # System-Nachrichten im Chat anzeigen
+            "auto_scroll_chat": True,        # Auto-Scroll zu neuen Nachrichten
+            "show_timestamps": True,         # Timestamps in Chat anzeigen
+            "compact_mode": False,           # Kompakte Darstellung
         }
     
     def load_config(self):
@@ -198,37 +276,42 @@ class A1Terminal:
         
         # Modell Management Frame (ganz oben)
         model_frame = ctk.CTkFrame(self.session_panel)
-        model_frame.pack(fill="x", padx=5, pady=5)
+        model_frame.pack(fill="x", padx=self.config.get("ui_padding_content", 5), 
+                        pady=self.config.get("ui_padding_content", 5))
         
         model_title = ctk.CTkLabel(model_frame, text="🤖 Modell Management", 
-                                  font=("Arial", 12, "bold"))
-        model_title.pack(anchor="w", padx=10, pady=(10, 5))
+                                  font=("Arial", self.config.get("ui_model_title_size", 12), "bold"))
+        model_title.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), 
+                        pady=(self.config.get("ui_padding_main", 10), self.config.get("ui_padding_content", 5)))
         
         # Ollama Status
         self.status_label = ctk.CTkLabel(model_frame, text="Ollama Status: Wird geprüft...",
-                                        font=("Arial", 9))
-        self.status_label.pack(anchor="w", padx=10, pady=2)
+                                        font=("Arial", self.config.get("ui_model_label_size", 9)))
+        self.status_label.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), pady=2)
         
         # Installierte Modelle
         installed_frame = ctk.CTkFrame(model_frame)
-        installed_frame.pack(fill="x", padx=10, pady=5)
+        installed_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
+                            pady=self.config.get("ui_padding_content", 5))
         
         self.installed_label = ctk.CTkLabel(installed_frame, text="📦 Installiert:",
-                                          font=("Arial", 9, "bold"))
-        self.installed_label.pack(anchor="w", padx=5, pady=2)
+                                          font=("Arial", self.config.get("ui_model_label_size", 9), "bold"))
+        self.installed_label.pack(anchor="w", padx=self.config.get("ui_padding_content", 5), pady=2)
         
         # Model Dropdown und Buttons in einer Zeile
         model_controls_frame = ctk.CTkFrame(installed_frame)
-        model_controls_frame.pack(fill="x", padx=5, pady=2)
+        model_controls_frame.pack(fill="x", padx=self.config.get("ui_padding_content", 5), pady=2)
         
         self.model_var = tk.StringVar()
         self.model_dropdown = ctk.CTkComboBox(
             model_controls_frame, 
             variable=self.model_var,
             values=["Keine Modelle verfügbar"],
-            command=self.on_model_select
+            command=self.on_model_select,
+            height=self.config.get("ui_model_dropdown_height", 32),
+            font=("Arial", self.config.get("ui_model_font_size", 11))
         )
-        self.model_dropdown.pack(side="left", fill="x", expand=True, padx=(2, 5), pady=2)  # Dynamische Breite
+        self.model_dropdown.pack(side="left", fill="x", expand=True, padx=(2, 5), pady=2)
         
         # Mausrad-Scrolling für model_dropdown aktivieren
         
@@ -239,8 +322,8 @@ class A1Terminal:
             command=self.delete_selected_model,
             fg_color="red",
             hover_color="darkred",
-            width=35,  # Schmaler für mehr Platz
-            font=("Arial", 9)
+            width=self.config.get("ui_model_button_size", 35),
+            font=("Arial", self.config.get("ui_model_label_size", 9))
         )
         self.delete_btn.pack(side="right", padx=2, pady=2)
         
@@ -249,20 +332,23 @@ class A1Terminal:
             model_controls_frame,
             text="🔄",
             command=self.refresh_models,
-            width=35,  # Schmaler für mehr Platz
-            font=("Arial", 9)
+            width=self.config.get("ui_model_button_size", 35),
+            font=("Arial", self.config.get("ui_model_label_size", 9))
         )
-        self.refresh_btn.pack(side="right", padx=2, pady=2)        # Verfügbare Modelle zum Download
+        self.refresh_btn.pack(side="right", padx=2, pady=2)
+        
+        # Verfügbare Modelle zum Download
         download_frame = ctk.CTkFrame(model_frame)
-        download_frame.pack(fill="x", padx=10, pady=5)
+        download_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
+                           pady=self.config.get("ui_padding_content", 5))
         
         self.available_label = ctk.CTkLabel(download_frame, text="⬇️ Download:",
-                                          font=("Arial", 9, "bold"))
-        self.available_label.pack(anchor="w", padx=5, pady=2)
+                                          font=("Arial", self.config.get("ui_model_label_size", 9), "bold"))
+        self.available_label.pack(anchor="w", padx=self.config.get("ui_padding_content", 5), pady=2)
         
         # Download Controls
         download_controls_frame = ctk.CTkFrame(download_frame)
-        download_controls_frame.pack(fill="x", padx=5, pady=2)
+        download_controls_frame.pack(fill="x", padx=self.config.get("ui_padding_content", 5), pady=2)
         
         # Kategorisiertes Dropdown für verfügbare Modelle
         self.available_var = tk.StringVar()
@@ -270,17 +356,17 @@ class A1Terminal:
             download_controls_frame, 
             variable=self.available_var,
             categories_dict={},
-            font=("Arial", 9)
+            font=("Arial", self.config.get("ui_model_font_size", 9))
         )
-        self.available_dropdown.pack(side="left", fill="x", expand=True, padx=(2, 5), pady=2)  # Dynamische Breite
+        self.available_dropdown.pack(side="left", fill="x", expand=True, padx=(2, 5), pady=2)
         
         # Download Button
         self.download_btn = ctk.CTkButton(
             download_controls_frame,
             text="⬇️",
             command=self.download_selected_model,
-            width=35,  # Schmaler
-            font=("Arial", 9)
+            width=self.config.get("ui_model_button_size", 35),
+            font=("Arial", self.config.get("ui_model_label_size", 9))
         )
         self.download_btn.pack(side="right", padx=2, pady=2)
         
@@ -289,18 +375,18 @@ class A1Terminal:
             download_controls_frame,
             text="📝",
             command=self.show_download_dialog,
-            width=35,  # Schmaler
-            font=("Arial", 9)
+            width=self.config.get("ui_model_button_size", 35),
+            font=("Arial", self.config.get("ui_model_label_size", 9))
         )
         self.manual_download_btn.pack(side="right", padx=2, pady=2)
         
         # Progress Bar für Downloads (initial versteckt)
         self.progress_frame = ctk.CTkFrame(model_frame)
         self.progress_label = ctk.CTkLabel(self.progress_frame, text="Download läuft...",
-                                         font=("Arial", 9))
+                                         font=("Arial", self.config.get("ui_model_label_size", 9)))
         self.progress_label.pack(pady=2)
         self.progress_bar = ctk.CTkProgressBar(self.progress_frame)
-        self.progress_bar.pack(fill="x", padx=10, pady=2)
+        self.progress_bar.pack(fill="x", padx=self.config.get("ui_padding_main", 10), pady=2)
         
         # ============================================
         # SESSION MANAGEMENT BEREICH (DARUNTER)
@@ -310,71 +396,80 @@ class A1Terminal:
         
         # Session Liste
         sessions_frame = ctk.CTkFrame(self.session_panel)
-        sessions_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        sessions_frame.pack(fill="both", expand=True, 
+                           padx=self.config.get("ui_padding_content", 5), 
+                           pady=self.config.get("ui_padding_content", 5))
         
         # Header-Frame für Session Liste mit Button nebeneinander
         session_header_frame = ctk.CTkFrame(sessions_frame)
-        session_header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        session_header_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
+                                 pady=(self.config.get("ui_padding_main", 10), self.config.get("ui_padding_content", 5)))
         
         list_label = ctk.CTkLabel(session_header_frame, text="🗂️ Session Liste:", 
-                                 font=("Arial", 12, "bold"))
-        list_label.pack(side="left", anchor="w", padx=(0, 10))
+                                 font=("Arial", self.config.get("ui_model_title_size", 12), "bold"))
+        list_label.pack(side="left", anchor="w", padx=(0, self.config.get("ui_padding_main", 10)))
         
         # Neue Session Button - jetzt neben der Session Liste
         new_session_btn = ctk.CTkButton(
             session_header_frame, 
             text="➕ Neue Session",
             command=self.create_new_session,
-            width=140,
-            height=25,
-            font=("Arial", 9, "bold"),
+            width=self.config.get("ui_session_button_width", 140),
+            height=self.config.get("ui_session_button_height", 25),
+            font=("Arial", self.config.get("ui_session_button_font", 9), "bold"),
             fg_color="#2B8A3E",
             hover_color="#37A24B"
         )
-        new_session_btn.pack(side="right", padx=(10, 0))
+        new_session_btn.pack(side="right", padx=(self.config.get("ui_padding_main", 10), 0))
         
         # Scrollbare Session-Liste - kleinere Höhe für mehr Platz für andere Elemente
-        self.session_listbox = ctk.CTkScrollableFrame(sessions_frame, height=150)
-        self.session_listbox.pack(fill="both", expand=True, padx=10, pady=5)
+        self.session_listbox = ctk.CTkScrollableFrame(sessions_frame, 
+                                                      height=self.config.get("ui_session_item_height", 60) * 2.5)
+        self.session_listbox.pack(fill="both", expand=True, 
+                                 padx=self.config.get("ui_padding_main", 10), 
+                                 pady=self.config.get("ui_padding_content", 5))
         
         # Aktuelle Session Info (mit blauer Umrandung)
         self.current_frame = ctk.CTkFrame(self.session_panel, border_width=3, border_color="#00BFFF")
-        self.current_frame.pack(fill="x", padx=5, pady=5)
-
+        self.current_frame.pack(fill="x", 
+                               padx=self.config.get("ui_padding_content", 5), 
+                               pady=self.config.get("ui_padding_content", 5))
 
         current_label = ctk.CTkLabel(self.current_frame, text="📌 Aktuelle Session:", 
-                                    font=("Arial", 12, "bold"))
-        current_label.pack(anchor="w", padx=10, pady=(10, 5))
+                                    font=("Arial", self.config.get("ui_model_title_size", 12), "bold"))
+        current_label.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), 
+                          pady=(self.config.get("ui_padding_main", 10), self.config.get("ui_padding_content", 5)))
 
         # Session Details
         self.current_session_label = ctk.CTkLabel(
             self.current_frame, 
             text="Keine Session aktiv",
-            font=("Arial", 10),
+            font=("Arial", self.config.get("ui_session_font_size", 11)),
             anchor="w"
         )
-        self.current_session_label.pack(anchor="w", padx=10, pady=2)
+        self.current_session_label.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), pady=2)
 
         # Model Info
         self.current_model_label = ctk.CTkLabel(
             self.current_frame,
             text="Model: Nicht ausgewählt", 
-            font=("Arial", 10),
+            font=("Arial", self.config.get("ui_session_font_size", 11)),
             anchor="w"
         )
-        self.current_model_label.pack(anchor="w", padx=10, pady=2)
+        self.current_model_label.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), pady=2)
 
         # BIAS Input
         bias_label = ctk.CTkLabel(self.current_frame, text="🎯 Session BIAS:", 
-                                 font=("Arial", 10, "bold"))
-        bias_label.pack(anchor="w", padx=10, pady=(10, 2))
+                                 font=("Arial", self.config.get("ui_session_font_size", 11), "bold"))
+        bias_label.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), 
+                       pady=(self.config.get("ui_padding_main", 10), 2))
 
         self.session_bias_entry = ctk.CTkTextbox(
             self.current_frame,
-            height=60,
-            font=("Arial", 9)
+            height=self.config.get("ui_bias_height", 60),
+            font=("Arial", self.config.get("ui_bias_font_size", 9))
         )
-        self.session_bias_entry.pack(fill="x", padx=10, pady=2)
+        self.session_bias_entry.pack(fill="x", padx=self.config.get("ui_padding_main", 10), pady=2)
 
         # Auto-Save für BIAS bei Textänderung
         self.bias_auto_save_timer = None
@@ -385,24 +480,26 @@ class A1Terminal:
         self.bias_info_label = ctk.CTkLabel(
             self.current_frame,
             text="💭 BIAS nicht gesetzt",
-            font=("Arial", 9),
+            font=("Arial", self.config.get("ui_model_label_size", 9)),
             text_color="gray"
         )
-        self.bias_info_label.pack(anchor="w", padx=10, pady=2)
+        self.bias_info_label.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), pady=2)
 
         # BIAS speichern Button (jetzt optional, da Auto-Save aktiv ist)
         save_bias_btn = ctk.CTkButton(
             self.current_frame,
             text="💾 BIAS manuell speichern",
             command=self.save_session_bias,
-            height=25,
-            font=("Arial", 9)
+            height=self.config.get("ui_session_button_height", 25),
+            font=("Arial", self.config.get("ui_session_button_font", 9))
         )
-        save_bias_btn.pack(fill="x", padx=10, pady=5)
+        save_bias_btn.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
+                          pady=self.config.get("ui_padding_content", 5))
 
         # Session Actions
         actions_frame = ctk.CTkFrame(self.current_frame)
-        actions_frame.pack(fill="x", padx=10, pady=5)
+        actions_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
+                          pady=self.config.get("ui_padding_content", 5))
         
         # Manueller Session-Speichern Button entfernt - Auto-Save ist aktiv
         
@@ -410,8 +507,8 @@ class A1Terminal:
             actions_frame,
             text="🗑️ Session",
             command=self.delete_current_session,
-            height=25,
-            font=("Arial", 9),
+            height=self.config.get("ui_session_button_height", 25),
+            font=("Arial", self.config.get("ui_session_button_font", 9)),
             fg_color="#C92A2A",
             hover_color="#E03131"
         )
@@ -422,8 +519,8 @@ class A1Terminal:
             actions_frame,
             text="🧹 Alle",
             command=self.delete_all_sessions,
-            height=25,
-            font=("Arial", 9),
+            height=self.config.get("ui_session_button_height", 25),
+            font=("Arial", self.config.get("ui_session_button_font", 9)),
             fg_color="#8B0000",
             hover_color="#A52A2A"
         )
@@ -431,7 +528,8 @@ class A1Terminal:
         
         # Debug Sessions Button - mit Beschriftung für bessere Usability
         debug_frame = ctk.CTkFrame(self.session_panel)
-        debug_frame.pack(fill="x", padx=5, pady=5)
+        debug_frame.pack(fill="x", padx=self.config.get("ui_padding_content", 5), 
+                        pady=self.config.get("ui_padding_content", 5))
         
         # Buttons gleichmäßig in Reihen anordnen
         # Erste Reihe: Debug Sessions und Sessions-Ordner
@@ -442,8 +540,8 @@ class A1Terminal:
             debug_row1,
             text="🔍 Debug Sessions",
             command=self.show_session_debug,
-            height=30,
-            font=("Arial", 9),
+            height=self.config.get("ui_debug_button_height", 30),
+            font=("Arial", self.config.get("ui_debug_button_font", 9)),
             fg_color="#4A4A4A",
             hover_color="#5A5A5A"
         )
@@ -453,8 +551,8 @@ class A1Terminal:
             debug_row1,
             text="📁 Sessions-Ordner",
             command=self.open_sessions_folder,
-            height=30,
-            font=("Arial", 9),
+            height=self.config.get("ui_debug_button_height", 30),
+            font=("Arial", self.config.get("ui_debug_button_font", 9)),
             fg_color="#2D5A87",
             hover_color="#3D6A97"
         )
@@ -1669,10 +1767,11 @@ class A1Terminal:
         self.content_frame = ctk.CTkFrame(self.main_frame)
         self.content_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Session Management Panel (links) - SCROLLABLE für kleine Fenster
+        # Session Management Panel (links) - Breite aus Config
+        session_panel_width = self.config.get('ui_session_panel_width', 350)
         self.session_panel_container = ctk.CTkScrollableFrame(
             self.content_frame, 
-            width=350,  # Feste aber angemessene Breite
+            width=session_panel_width,
             label_text="Session Management"
         )
         self.session_panel_container.pack(side="left", fill="y", padx=(0, 5), pady=0)
@@ -1700,6 +1799,9 @@ class A1Terminal:
         
         # Session Management initialisieren
         self.initialize_session_management()
+        
+        # Keyboard Shortcuts einrichten
+        self.setup_keyboard_shortcuts()
     
     def setup_chat_tab(self):
         """Erstellt den Chat-Tab mit allen Elementen"""
@@ -1720,14 +1822,18 @@ class A1Terminal:
         
         # Eingabe-Bereich
         self.input_frame = ctk.CTkFrame(self.chat_frame)
-        self.input_frame.pack(fill="x", padx=10, pady=(5, 10))
+        self.input_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
+                             pady=(self.config.get("ui_padding_content", 5), self.config.get("ui_padding_main", 10)))
         
         self.message_entry = ctk.CTkEntry(
             self.input_frame,
             placeholder_text="Nachricht eingeben...",
-            font=("Arial", 12)
+            font=("Arial", self.config.get("ui_input_font_size", 12)),
+            height=self.config.get("ui_input_height", 40)
         )
-        self.message_entry.pack(side="left", fill="x", expand=True, padx=(0, 10), pady=10)
+        self.message_entry.pack(side="left", fill="x", expand=True, 
+                               padx=(0, self.config.get("ui_padding_main", 10)), 
+                               pady=self.config.get("ui_padding_main", 10))
         self.message_entry.bind("<Return>", self.send_message)
         self.message_entry.bind("<Up>", self.navigate_history_up)
         self.message_entry.bind("<Down>", self.navigate_history_down)
@@ -1736,9 +1842,12 @@ class A1Terminal:
         self.send_btn = ctk.CTkButton(
             self.input_frame,
             text="Senden",
-            command=self.send_message
+            command=self.send_message,
+            width=self.config.get("ui_button_width", 100),
+            height=self.config.get("ui_button_height", 40),
+            font=("Arial", self.config.get("ui_input_font_size", 12))
         )
-        self.send_btn.pack(side="right", pady=10)
+        self.send_btn.pack(side="right", pady=self.config.get("ui_padding_main", 10))
         
         # Stop Button (initial deaktiviert)
         self.stop_btn = ctk.CTkButton(
@@ -1747,10 +1856,13 @@ class A1Terminal:
             command=self.stop_generation,
             fg_color="red",
             hover_color="darkred",
-            width=60,
+            width=self.config.get("ui_model_button_size", 60),
+            height=self.config.get("ui_button_height", 40),
+            font=("Arial", self.config.get("ui_input_font_size", 12)),
             state="disabled"
         )
-        self.stop_btn.pack(side="right", padx=(0, 10), pady=10)
+        self.stop_btn.pack(side="right", padx=(0, self.config.get("ui_padding_main", 10)), 
+                          pady=self.config.get("ui_padding_main", 10))
         
         # Keine automatische Session-Erstellung beim Start mehr
     
@@ -1774,13 +1886,16 @@ class A1Terminal:
         button_container.pack(expand=True)
         
         # Buttons nebeneinander zentriert
-        apply_btn = ctk.CTkButton(button_container, text="✅ Anwenden", command=self.apply_config, 
-                                 width=140, height=35, font=("Arial", 12, "bold"))
-        apply_btn.pack(side="left", padx=(15, 10), pady=15)
+        restart_btn = ctk.CTkButton(button_container, text="🔄 Übernehmen & Neustart", 
+                                   command=self.apply_and_restart, 
+                                   width=200, height=40, font=("Arial", 13, "bold"),
+                                   fg_color="#1f538d", hover_color="#2a6bb0")
+        restart_btn.pack(side="left", padx=10, pady=15)
         
-        reset_btn = ctk.CTkButton(button_container, text="🔄 Standard", command=self.reset_config, 
-                                 width=140, height=35, font=("Arial", 12, "bold"))
-        reset_btn.pack(side="left", padx=(10, 15), pady=15)
+        reset_btn = ctk.CTkButton(button_container, text="↩️ Standard", command=self.reset_config, 
+                                 width=150, height=40, font=("Arial", 13, "bold"),
+                                 fg_color="#722F37", hover_color="#8a3a45")
+        reset_btn.pack(side="left", padx=10, pady=15)
         
         # Bubble-Farben Sektion
         bubble_frame = ctk.CTkFrame(config_scroll)
@@ -1927,35 +2042,87 @@ class A1Terminal:
         self.system_font_preview.pack(side="left", padx=10)
         
         
-        # UI-Optionen Sektion
-        ui_frame = ctk.CTkFrame(config_scroll)
-        ui_frame.pack(fill="x", pady=(10, 15))
+        # ========== UI-EINSTELLUNGEN SEKTION ==========
+        ui_settings_frame = ctk.CTkFrame(config_scroll)
+        ui_settings_frame.pack(fill="x", pady=(10, 15))
         
-        ui_title = ctk.CTkLabel(ui_frame, text="⚙️ Benutzeroberfläche", font=("Arial", 16, "bold"))
-        ui_title.pack(pady=(10, 5))
+        ui_settings_title = ctk.CTkLabel(ui_settings_frame, text="🎛️ Layout & Größen", font=("Arial", 16, "bold"))
+        ui_settings_title.pack(pady=(15, 10))
         
-        # System-Nachrichten Toggle
-        system_msg_frame = ctk.CTkFrame(ui_frame)
-        system_msg_frame.pack(fill="x", padx=15, pady=(5, 10))
+        # Session Panel Breite
+        self.create_config_slider(ui_settings_frame, "Session-Panel Breite:", "ui_session_panel_width", 
+                                 200, 600, self.config.get('ui_session_panel_width', 350), "px")
         
+        # Fenster-Startgröße
+        self.create_config_slider(ui_settings_frame, "Fensterbreite (Start):", "ui_window_width", 
+                                 1000, 2560, self.config.get('ui_window_width', 1400), "px")
+        self.create_config_slider(ui_settings_frame, "Fensterhöhe (Start):", "ui_window_height", 
+                                 600, 1440, self.config.get('ui_window_height', 900), "px")
+        
+        # Input & Buttons
+        ui_input_title = ctk.CTkLabel(ui_settings_frame, text="⌨️ Eingabe & Buttons", font=("Arial", 14, "bold"))
+        ui_input_title.pack(pady=(15, 5))
+        
+        self.create_config_slider(ui_settings_frame, "Eingabefeld-Höhe:", "ui_input_height", 
+                                 30, 60, self.config.get('ui_input_height', 40), "px")
+        self.create_config_slider(ui_settings_frame, "Eingabe-Schriftgröße:", "ui_input_font_size", 
+                                 9, 18, self.config.get('ui_input_font_size', 12), "px")
+        self.create_config_slider(ui_settings_frame, "Button-Breite:", "ui_button_width", 
+                                 60, 150, self.config.get('ui_button_width', 100), "px")
+        self.create_config_slider(ui_settings_frame, "Button-Höhe:", "ui_button_height", 
+                                 25, 60, self.config.get('ui_button_height', 40), "px")
+        
+        # Erweiterte Optionen
+        ui_options_title = ctk.CTkLabel(ui_settings_frame, text="⚡ Erweiterte Optionen", font=("Arial", 14, "bold"))
+        ui_options_title.pack(pady=(15, 5))
+        
+        options_frame = ctk.CTkFrame(ui_settings_frame)
+        options_frame.pack(fill="x", padx=15, pady=(5, 10))
+        
+        # System-Nachrichten Toggle (verschoben hierher)
         self.show_system_messages_var = ctk.BooleanVar(value=self.config.get("show_system_messages", True))
-        
         system_msg_checkbox = ctk.CTkCheckBox(
-            system_msg_frame,
+            options_frame,
             text="📢 System-Nachrichten im Chat anzeigen",
             variable=self.show_system_messages_var,
-            font=("Arial", 12)
+            font=("Arial", 11)
         )
-        system_msg_checkbox.pack(side="left", padx=10, pady=10)
+        system_msg_checkbox.pack(anchor="w", padx=10, pady=5)
         
-        # Beschreibung
-        system_msg_info = ctk.CTkLabel(
-            system_msg_frame, 
-            text="(Deaktivieren für sauberen Chat ohne Modell-Wechsel, Downloads, etc.)",
-            font=("Arial", 10),
-            text_color="gray"
-        )
-        system_msg_info.pack(side="left", padx=10, pady=10)
+        self.auto_scroll_var = ctk.BooleanVar(value=self.config.get("auto_scroll_chat", True))
+        auto_scroll_cb = ctk.CTkCheckBox(options_frame, text="📜 Auto-Scroll zu neuen Nachrichten", 
+                                        variable=self.auto_scroll_var, font=("Arial", 11))
+        auto_scroll_cb.pack(anchor="w", padx=10, pady=5)
+    
+    def create_config_slider(self, parent, label_text, config_key, min_val, max_val, current_val, unit=""):
+        """Erstellt einen Slider mit Label und Wert-Anzeige für Config-Einstellungen"""
+        frame = ctk.CTkFrame(parent)
+        frame.pack(fill="x", padx=15, pady=5)
+        
+        # Label
+        label = ctk.CTkLabel(frame, text=label_text, width=200, anchor="w")
+        label.pack(side="left", padx=5)
+        
+        # Value Display
+        value_label = ctk.CTkLabel(frame, text=f"{int(current_val)}{unit}", width=60)
+        value_label.pack(side="right", padx=5)
+        
+        # Slider
+        slider = ctk.CTkSlider(frame, from_=min_val, to=max_val, width=300,
+                              number_of_steps=(max_val - min_val))
+        slider.set(current_val)
+        slider.pack(side="right", padx=10)
+        
+        # Update function
+        def update_value(val):
+            value_label.configure(text=f"{int(float(val))}{unit}")
+        
+        slider.configure(command=update_value)
+        
+        # Store reference
+        if not hasattr(self, 'config_sliders'):
+            self.config_sliders = {}
+        self.config_sliders[config_key] = slider
     
     def open_color_picker(self, entry_widget):
         """Öffnet einen RGB-Farbwähler und setzt den gewählten Farbwert in das Entry-Feld"""
@@ -2086,7 +2253,7 @@ class A1Terminal:
     def apply_config(self):
         """Wendet die neuen Konfigurationen an"""
         try:
-            # Update Config-Dictionary
+            # Update Config-Dictionary - Farben
             self.config["user_bg_color"] = self.user_bg_entry.get() or "#003300"
             self.config["user_text_color"] = self.user_text_entry.get() or "#00FF00"
             self.config["ai_bg_color"] = self.ai_bg_entry.get() or "#1E3A5F"
@@ -2094,7 +2261,7 @@ class A1Terminal:
             self.config["system_bg_color"] = self.system_bg_entry.get() or "#722F37"
             self.config["system_text_color"] = self.system_text_entry.get() or "white"
             
-            # Individuelle Schriftarten und Größen
+            # Schriftarten und Größen
             self.config["user_font"] = self.user_font_combo.get()
             self.config["user_font_size"] = int(self.user_font_size_slider.get())
             self.config["ai_font"] = self.ai_font_combo.get()
@@ -2102,23 +2269,75 @@ class A1Terminal:
             self.config["system_font"] = self.system_font_combo.get()
             self.config["system_font_size"] = int(self.system_font_size_slider.get())
             
-            
             # UI-Optionen
             self.config["show_system_messages"] = self.show_system_messages_var.get()
+            self.config["auto_scroll_chat"] = self.auto_scroll_var.get()
+            
+            # UI-Slider-Werte übernehmen
+            if hasattr(self, 'config_sliders'):
+                for config_key, slider in self.config_sliders.items():
+                    self.config[config_key] = int(slider.get())
             
             # Speichere Konfiguration in YAML-Datei
             self.save_config()
             
-            # ✨ Aktualisiere alle bestehenden Chat-Bubbles mit neuer Konfiguration
+            # Aktualisiere alle bestehenden Chat-Bubbles mit neuer Konfiguration
             self.update_all_chat_bubbles()
             
             # Show success message
-            self.add_to_chat("System", "✅ Konfiguration erfolgreich angewendet und gespeichert! Alle Chat-Bubbles wurden aktualisiert.")
+            self.add_to_chat("System", "✅ Konfiguration erfolgreich angewendet und gespeichert! Änderungen werden beim nächsten Start vollständig übernommen.")
             
-            # Teste Konsolen-Ausgabe mit neuen Einstellungen (entfernt)
+            # Info bei UI-Layout-Änderungen
+            if hasattr(self, 'config_sliders'):
+                self.add_to_chat("System", "ℹ️ Layout-Änderungen (Panel-Größen, Button-Größen etc.) werden beim nächsten Neustart der App aktiv.")
             
         except Exception as e:
             self.add_to_chat("System", f"❌ Fehler beim Anwenden der Konfiguration: {e}")
+    
+    def apply_and_restart(self):
+        """Wendet Konfiguration an und startet die Anwendung neu"""
+        try:
+            # Speichere Konfiguration
+            self.apply_config()
+            
+            # Kurze Pause damit Nutzer die Bestätigung sieht
+            self.root.after(800, self.restart_application)
+            
+        except Exception as e:
+            self.add_to_chat("System", f"❌ Fehler beim Neustart: {e}")
+    
+    def restart_application(self):
+        """Startet die Anwendung neu mit dem restart.py Script"""
+        try:
+            import sys
+            import subprocess
+            import os
+            
+            self.add_to_chat("System", "🔄 Anwendung wird neu gestartet...")
+            self.root.update()
+            
+            # Speichere aktuelle Session
+            if hasattr(self, 'current_session_id') and self.current_session_id:
+                if hasattr(self, 'save_session'):
+                    self.save_session()
+            
+            # Pfad zum restart.py Script
+            restart_script = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "restart.py")
+            
+            # Starte restart.py im Hintergrund
+            if os.path.exists(restart_script):
+                subprocess.Popen([sys.executable, restart_script], 
+                               creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+            else:
+                # Fallback: Direkter Neustart ohne Script
+                main_script = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "main.py")
+                subprocess.Popen([sys.executable, main_script])
+            
+            # Schließe aktuelle Instanz nach kurzer Verzögerung
+            self.root.after(300, self.root.destroy)
+            
+        except Exception as e:
+            self.add_to_chat("System", f"❌ Fehler beim Neustart der Anwendung: {e}")
     
     def update_all_chat_bubbles(self):
         """Aktualisiert das Styling aller bestehenden Chat-Bubbles"""
@@ -2539,6 +2758,234 @@ class A1Terminal:
         # Thread starten und speichern
         self.current_generation_thread = threading.Thread(target=get_response, daemon=True)
         self.current_generation_thread.start()
+    
+    def send_message_programmatic(self, message):
+        """Sendet eine Nachricht programmatisch (z.B. aus Textbox statt Entry)"""
+        if not message or not message.strip():
+            return
+        
+        message = message.strip()
+        
+        if not self.current_model:
+            messagebox.showwarning("Warnung", "Kein Modell ausgewählt!")
+            return
+        
+        # Reset Stop-Flag
+        self.generation_stopped = False
+        
+        # Nachricht zur Historie hinzufügen
+        if message and message not in self.message_history:
+            self.message_history.append(message)
+        self.history_index = -1
+        
+        # Prüfe, ob Session leer war
+        session_empty = False
+        if self.current_session_id and self.current_session_id in self.sessions:
+            session_data = self.sessions[self.current_session_id]
+            if not session_data.get("messages"):
+                session_empty = True
+        
+        # Nachricht anzeigen
+        self.add_to_chat("Sie", message)
+        
+        # Session-Liste aktualisieren wenn vorher leer
+        if session_empty:
+            self.update_session_list()
+            self.update_current_session_display()
+            if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
+                self.chat_display_frame._parent_canvas.yview_moveto(1.0)
+        
+        # UI während Generation anpassen
+        if hasattr(self, 'stop_btn'):
+            self.stop_btn.configure(state="normal")
+        if hasattr(self, 'send_btn'):
+            self.send_btn.configure(state="disabled")
+        
+        # Antwort abrufen
+        def get_response():
+            try:
+                self.root.after(0, self.add_thinking_indicator)
+                
+                # Session-BIAS berücksichtigen
+                session_bias = ""
+                if hasattr(self, 'current_session_bias') and self.current_session_bias:
+                    session_bias = self.current_session_bias.strip()
+                
+                # Chat-Historie mit BIAS vorbereiten
+                modified_history = self.chat_history.copy()
+                if session_bias:
+                    modified_history = [
+                        {"role": "system", "content": session_bias}
+                    ] + modified_history
+                
+                # Nachricht zur Chat-History hinzufügen
+                self.chat_history.append({"role": "user", "content": message})
+                modified_history.append({"role": "user", "content": message})
+                
+                # Ollama API aufrufen mit Streaming
+                response_text = ""
+                self.current_response_text = ""
+                self.response_message_widget = None
+                
+                for chunk in self.ollama.chat_stream(self.current_model, modified_history):
+                    if self.generation_stopped:
+                        break
+                    response_text += chunk
+                    self.root.after(0, lambda c=chunk: self.update_progressive_response(c))
+                
+                # Finale Antwort zur History hinzufügen
+                if not self.generation_stopped and response_text:
+                    self.chat_history.append({"role": "assistant", "content": response_text})
+                    self.root.after(0, self.save_current_session)
+                    
+            except Exception as e:
+                if not self.generation_stopped:
+                    self.root.after(0, lambda: self.add_to_chat("System", f"❌ Fehler: {str(e)}"))
+            finally:
+                self.root.after(0, self.reset_generation_ui)
+        
+        # Thread starten
+        self.current_generation_thread = threading.Thread(target=get_response, daemon=True)
+        self.current_generation_thread.start()
+    
+    def download_model_by_name(self, model_name):
+        """Lädt ein Modell nach Namen herunter"""
+        if not model_name or not model_name.strip():
+            messagebox.showwarning("Warnung", "Bitte geben Sie einen Modellnamen ein!")
+            return
+        
+        model_name = model_name.strip()
+        
+        # Prüfe ob Modell bereits existiert
+        existing_models = self.ollama.list_models()
+        if model_name in existing_models:
+            messagebox.showinfo("Info", f"Modell '{model_name}' ist bereits installiert!")
+            return
+        
+        # Reset Download-Stop-Flag
+        self.download_stopped = False
+        
+        def download():
+            try:
+                self.console_print(f"📥 Download gestartet: {model_name}", "info")
+                
+                # Download mit Progress
+                for progress in self.ollama.download_model_stream(model_name):
+                    if self.download_stopped:
+                        self.console_print(f"⏹️ Download abgebrochen: {model_name}", "warning")
+                        break
+                    
+                    # Progress anzeigen
+                    if "status" in progress:
+                        status = progress["status"]
+                        if "total" in progress and "completed" in progress:
+                            percent = (progress["completed"] / progress["total"]) * 100
+                            self.console_print(f"📥 {status}: {percent:.1f}%", "info")
+                        else:
+                            self.console_print(f"📥 {status}", "info")
+                
+                if not self.download_stopped:
+                    self.console_print(f"✅ Download abgeschlossen: {model_name}", "success")
+                    # Modell-Liste aktualisieren
+                    self.root.after(0, self.update_model_list)
+                    
+            except Exception as e:
+                self.console_print(f"❌ Download-Fehler: {str(e)}", "error")
+        
+        # Thread starten
+        self.current_download_thread = threading.Thread(target=download, daemon=True)
+        self.current_download_thread.start()
+    
+    def export_session_markdown(self):
+        """Exportiert die aktuelle Session als Markdown-Datei"""
+        if not self.current_session_id:
+            messagebox.showwarning("Warnung", "Keine aktive Session zum Exportieren!")
+            return
+        
+        # Session-Daten holen
+        session = self.sessions.get(self.current_session_id)
+        if not session:
+            return
+        
+        # Dateiname vorschlagen
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_name = f"session_{self.current_session_id}_{timestamp}.md"
+        
+        # Datei-Dialog
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".md",
+            filetypes=[("Markdown", "*.md"), ("Alle Dateien", "*.*")],
+            initialfile=default_name
+        )
+        
+        if not filepath:
+            return
+        
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                # Header
+                f.write(f"# Chat Session: {self.current_session_id}\n\n")
+                f.write(f"**Model:** {session.get('model', 'Unknown')}\n\n")
+                f.write(f"**Created:** {session.get('created_at', 'Unknown')}\n\n")
+                
+                # BIAS wenn vorhanden
+                if session.get('bias'):
+                    f.write(f"**BIAS/Context:**\n```\n{session['bias']}\n```\n\n")
+                
+                f.write("---\n\n")
+                
+                # Nachrichten
+                for msg in session.get('messages', []):
+                    role = msg.get('role', 'unknown')
+                    content = msg.get('content', '')
+                    
+                    if role == 'user':
+                        f.write(f"## 👤 Sie\n\n{content}\n\n")
+                    elif role == 'assistant':
+                        f.write(f"## 🤖 AI ({session.get('model', 'Unknown')})\n\n{content}\n\n")
+                    elif role == 'system':
+                        f.write(f"## ⚙️ System\n\n{content}\n\n")
+                    
+                    f.write("---\n\n")
+            
+            messagebox.showinfo("Erfolg", f"Session exportiert nach:\n{filepath}")
+            
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Export fehlgeschlagen:\n{str(e)}")
+    
+    def export_session_json(self):
+        """Exportiert die aktuelle Session als JSON-Datei"""
+        if not self.current_session_id:
+            messagebox.showwarning("Warnung", "Keine aktive Session zum Exportieren!")
+            return
+        
+        # Session-Daten holen
+        session = self.sessions.get(self.current_session_id)
+        if not session:
+            return
+        
+        # Dateiname vorschlagen
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_name = f"session_{self.current_session_id}_{timestamp}.json"
+        
+        # Datei-Dialog
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON", "*.json"), ("Alle Dateien", "*.*")],
+            initialfile=default_name
+        )
+        
+        if not filepath:
+            return
+        
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(session, f, indent=2, ensure_ascii=False)
+            
+            messagebox.showinfo("Erfolg", f"Session exportiert nach:\n{filepath}")
+            
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Export fehlgeschlagen:\n{str(e)}")
     
     def navigate_history_up(self, event=None):
         """Navigiert in der Nachrichten-Historie nach oben (ältere Nachrichten)"""
@@ -3228,6 +3675,57 @@ Kannst du ein einfaches Beispiel geben?
         lines.append("*Generiert von Ki-whisperer LLM Chat Client*")
         
         return '\n'.join(lines)
+    
+    def setup_keyboard_shortcuts(self):
+        """Richtet Keyboard Shortcuts ein"""
+        # Ctrl+N - Neue Session
+        self.root.bind("<Control-n>", lambda e: self.create_new_session())
+        
+        # Ctrl+L - Chat leeren
+        self.root.bind("<Control-l>", lambda e: self.clear_current_chat())
+        
+        # Ctrl+E - Export
+        self.root.bind("<Control-e>", lambda e: self.export_session_markdown())
+        
+        # Ctrl+B - BIAS fokussieren
+        self.root.bind("<Control-b>", lambda e: self.session_bias_entry.focus() if hasattr(self, 'session_bias_entry') else None)
+        
+        # Escape - Generation stoppen
+        self.root.bind("<Escape>", lambda e: self.stop_generation())
+        
+        print("⌨️ Keyboard Shortcuts aktiviert:")
+        print("  Ctrl+N: Neue Session")
+        print("  Ctrl+L: Chat leeren")
+        print("  Ctrl+E: Export")
+        print("  Ctrl+B: BIAS fokussieren")
+        print("  Escape: Generation stoppen")
+    
+    def clear_current_chat(self):
+        """Leert den aktuellen Chat"""
+        if not self.current_session_id:
+            return
+        
+        response = messagebox.askyesno(
+            "Chat leeren",
+            "Möchten Sie den gesamten Chat-Verlauf dieser Session löschen?"
+        )
+        
+        if response:
+            # Chat-History leeren
+            self.chat_history = []
+            
+            # Session aktualisieren
+            if self.current_session_id in self.sessions:
+                self.sessions[self.current_session_id]["messages"] = []
+                self.save_current_session()
+            
+            # Chat-Anzeige leeren
+            for bubble in self.chat_bubbles:
+                bubble.destroy()
+            self.chat_bubbles.clear()
+            
+            # System-Nachricht
+            self.add_to_chat("System", "✨ Chat wurde geleert")
     
     def run(self):
         """Startet die Anwendung"""
