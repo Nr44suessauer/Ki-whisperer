@@ -226,3 +226,9 @@ class ModelInfoDropdown(ctk.CTkFrame):
         """Setzt das ausgewählte Modell"""
         if model_name in self.models_dict:
             self.select_model(model_name, self.models_dict[model_name])
+        else:
+            # Modell ist nicht in der Liste, aber zeige es trotzdem an
+            self.selected_model = model_name
+            display_name = model_name[:35] + "..." if len(model_name) > 35 else model_name
+            self.dropdown_btn.configure(text=display_name)
+            self.info_label.configure(text="Modell aus Session geladen")

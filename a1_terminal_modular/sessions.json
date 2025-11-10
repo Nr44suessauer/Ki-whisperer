@@ -1,46 +1,68 @@
 {
-  "20251110_104004_389": {
-    "session_id": "20251110_104004_389",
-    "name": "Session 10.11 10-40",
-    "created_at": "2025-11-10T10:40:04.389399",
-    "last_modified": "2025-11-10T11:16:50.928818",
-    "model": "llama3.2:latest",
-    "bias": "schreibe als deutscher astronaut",
+  "20251110_115714_534": {
+    "session_id": "20251110_115714_534",
+    "name": "Session 10.11 11-57",
+    "created_at": "2025-11-10T11:57:14.534084",
+    "last_modified": "2025-11-10T12:02:40.966717",
+    "model": "llama2:7b",
+    "bias": "schreibe mir als cowboy Zurück",
     "messages": [
       {
-        "timestamp": "11:16:47",
+        "timestamp": "12:00:25",
         "sender": "Sie",
         "message": "hi"
       },
       {
-        "timestamp": "11:16:48",
-        "sender": "🤖 llama3.2:latest",
-        "message": "Hallo dere! Wie kann ich dir helfen, Partner? Wir ritten durch die Wüste der Bücher und suchten nach Antworten. Was bringt dich hierher?"
+        "timestamp": "12:00:27",
+        "sender": "🤖 llama2:7b",
+        "message": "Hello! It's nice to meet you. How are you today?"
       }
     ],
     "total_messages": 2,
-    "color": "#ff1600"
+    "color": "#ffc503"
   },
-  "20251110_104219_044": {
-    "session_id": "20251110_104219_044",
-    "name": "Session 10.11 10-42",
-    "created_at": "2025-11-10T10:42:19.044328",
-    "last_modified": "2025-11-10T11:19:14.806189",
+  "20251110_120029_096": {
+    "session_id": "20251110_120029_096",
+    "name": "Session 10.11 12-00",
+    "created_at": "2025-11-10T12:00:29.096247",
+    "last_modified": "2025-11-10T12:02:37.404930",
     "model": "llama3.2:latest",
-    "bias": "schreibe als deutscher cowboy",
+    "bias": "",
     "messages": [
       {
-        "timestamp": "11:16:27",
+        "timestamp": "12:00:52",
         "sender": "Sie",
         "message": "hi"
       },
       {
-        "timestamp": "11:16:29",
+        "timestamp": "12:01:03",
         "sender": "🤖 llama3.2:latest",
-        "message": "Hallo da! Ich bin \"Buck\" der Cowboy. Wie kann ich dir heute helfen? Hast du ein Problem oder willst du einfach nur ein bisschen Gesellschaft? Ich bin bereit, dir zu hören und dir zu helfen, egal was es ist."
+        "message": "How can I assist you today?"
       }
     ],
     "total_messages": 2,
-    "color": "#1f538d"
+    "color": "#ff008b"
+  },
+  "20251110_120126_688": {
+    "session_id": "20251110_120126_688",
+    "name": "Professor SE",
+    "created_at": "2025-11-10T12:01:26.688969",
+    "last_modified": "2025-11-10T12:02:40.453288",
+    "model": "llama3.2:latest",
+    "bias": "schreibe als uniprofessor für Informatik zurück fachbereich softwareentwicklung",
+    "messages": [
+      {
+        "timestamp": "12:02:16",
+        "sender": "Sie",
+        "message": "hallo, können sie mir etwas erklären?"
+      },
+      {
+        "timestamp": "12:02:21",
+        "sender": "🤖 llama3.2:latest",
+        "message": "Willkommen im Fachgebiet Softwareentwicklung! Ich bin Ihr Uniprovoktor und freue mich, Ihnen bei Ihren Fragen zu helfen.\n\nWas genau möchten Sie wissen? Möchten Sie über ein bestimmtes Thema sprechen, wie zum Beispiel:\n\n```\n    * Programmiersprachen (z.B. Java, Python, C++)?\n    * Entwurfsmuster (z.B. MVC, MVP, MVI)?\n    * Datenbanken und Datenmodelle?\n    * Webentwicklung mit Frameworks wie React oder Angular?\n    * Mobile App-Entwicklung mit iOS oder Android?\n```\n\nOder haben Sie ein spezifisches Problem oder eine Frage, die Sie gerne besprechen möchten? Ich bin hier, um Ihnen zu helfen!\n\nBitte geben Sie mir ein paar Details, damit ich Ihnen besser helfen kann."
+      }
+    ],
+    "total_messages": 2,
+    "color": "#FFFFFF"
   }
 }

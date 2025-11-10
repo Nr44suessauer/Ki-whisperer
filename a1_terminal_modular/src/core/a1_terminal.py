@@ -647,9 +647,18 @@ class A1Terminal:
         self.update_session_list()
         self.update_current_session_display()
         
+        # Stelle sicher, dass Modelle geladen sind
+        if hasattr(self, 'model_dropdown'):
+            # Wenn das Dropdown leer ist, lade Modelle neu
+            if not self.model_dropdown.models_dict:
+                self.console_print("🔄 Lade Modelle für neue Session...", "info")
+                self.refresh_models()
+        
         # Session persistent speichern mit Feedback
         self.save_session_with_feedback()
         
+        # Force update der UI nach kurzer Verzögerung
+        self.root.after(100, self.update_session_list)
 
         self.console_print(f"✅ Neue Session erstellt: {session_id}", "success")
 
@@ -862,12 +871,16 @@ class A1Terminal:
         
         # Alte Session speichern BEVOR Chat geleert wird und BEVOR Session-ID gewechselt wird
         # Die Nachrichten müssen noch in chat_bubbles sein für das Speichern
-        if old_session_id and old_session_id != session_id:
+        # WICHTIG: Prüfe ob die alte Session noch existiert (könnte gelöscht worden sein)
+        if old_session_id and old_session_id != session_id and old_session_id in self.sessions:
             # Speichern während chat_bubbles noch existieren und current_session_id noch die alte ist
             if self.save_current_session():
                 self.console_print(f"💾 Alte Session gespeichert: {old_session_id}", "success")
             else:
                 self.console_print(f"⚠️ Warnung: Konnte alte Session nicht speichern", "warning")
+        elif old_session_id and old_session_id != session_id and old_session_id not in self.sessions:
+            # Alte Session wurde bereits gelöscht - keine Warnung nötig
+            self.console_print(f"ℹ️ Alte Session {old_session_id} wurde bereits gelöscht", "info")
         
         # JETZT Session ID wechseln - KRITISCH: Muss VOR clear_chat passieren!
         self.current_session_id = session_id
@@ -901,7 +914,23 @@ class A1Terminal:
         if session_data.get("model"):
             self.current_model = session_data["model"]
             if hasattr(self, 'model_dropdown'):
+                # Versuche das Modell direkt zu setzen
                 self.model_dropdown.set_selected(self.current_model)
+                
+                # Falls das Modell noch nicht in models_dict ist (z.B. Modelle noch nicht geladen),
+                # versuche es nach kurzer Verzögerung erneut
+                def retry_set_model():
+                    if self.current_model and hasattr(self, 'model_dropdown'):
+                        # Prüfe ob Modell jetzt in der Liste ist
+                        if self.current_model in self.model_dropdown.models_dict:
+                            self.model_dropdown.set_selected(self.current_model)
+                        else:
+                            # Wenn nicht, aktualisiere die Modelle und versuche es nochmal
+                            self.refresh_models()
+                            self.root.after(500, lambda: self.model_dropdown.set_selected(self.current_model))
+                
+                # Retry nach 200ms
+                self.root.after(200, retry_set_model)
         
         # BIAS setzen - WICHTIG: VOR dem Laden der Nachrichten
         self.current_session_bias = session_data.get("bias", "")
@@ -966,6 +995,7 @@ class A1Terminal:
         
         # UI aktualisieren
         self.update_current_session_display()
+        self.update_session_list()  # Session-Liste auch aktualisieren
         
         # Zur letzten Nachricht scrollen - nur EINMAL mit Verzögerung
         if message_count > 0:
@@ -989,6 +1019,11 @@ class A1Terminal:
     def save_current_session(self):
         """Speichert die aktuelle Session"""
         if not self.current_session_id:
+            return False
+        
+        # Prüfe ob Session noch existiert (könnte gelöscht worden sein)
+        if self.current_session_id not in self.sessions:
+            self.console_print(f"⚠️ Session {self.current_session_id} existiert nicht mehr - Speichern übersprungen", "warning")
             return False
             
         session_data = self.sessions[self.current_session_id]
@@ -1860,6 +1895,28 @@ class A1Terminal:
         """Löscht die aktuelle Session"""
         if not self.current_session_id:
             return
+        
+        # Bestätigungsabfrage
+        session_count = len(self.sessions)
+        if session_count == 1:
+            # Letzte Session - besondere Warnung
+            result = messagebox.askyesno(
+                "Letzte Session löschen",
+                "Dies ist die letzte Session.\n\n"
+                "Möchten Sie diese wirklich löschen?\n"
+                "Nach dem Löschen wird eine neue leere Session erstellt."
+            )
+        else:
+            # Normale Bestätigung
+            result = messagebox.askyesno(
+                "Session löschen",
+                f"Möchten Sie die aktuelle Session wirklich löschen?\n\n"
+                f"Session: {self.sessions[self.current_session_id].get('name', 'Unbenannt')}\n"
+                f"({len(self.sessions[self.current_session_id].get('messages', []))} Nachrichten)"
+            )
+        
+        if not result:
+            return
             
         deleted_session_id = self.current_session_id
         
@@ -1895,6 +1952,9 @@ class A1Terminal:
         # UI sofort aktualisieren
         self.update_session_list()
         self.update_current_session_display()
+        
+        # Force update nach kurzer Verzögerung
+        self.root.after(100, self.update_session_list)
         
         # Prüfe ob noch andere Sessions vorhanden sind
         if self.sessions:
