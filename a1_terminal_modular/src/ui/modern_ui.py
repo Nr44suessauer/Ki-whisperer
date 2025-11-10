@@ -173,7 +173,7 @@ def setup_modern_ui(app):
     
     app.message_entry = ctk.CTkEntry(
         input_frame,
-        placeholder_text="💬 Message eingeben...",
+        placeholder_text="💬 insert prompt...",
         font=("Arial", 12),
         corner_radius=6,
         height=40

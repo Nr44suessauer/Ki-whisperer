@@ -25,6 +25,7 @@ class A1Terminal:
     """Main application class"""
     def __init__(self):
         self._session_just_loaded = False
+        self._model_just_changed = False
         
         # Load YAML configuration file FIRST
         self.config_file = "a1_terminal_config.yaml"
@@ -493,7 +494,7 @@ class A1Terminal:
         
         cleanup_btn = ctk.CTkButton(
             actions_frame,
-            text="🗑️ Alle delete",
+            text="🗑️ All delete",
             command=self.delete_all_sessions,
             height=35,
             font=("Arial", 12, "bold"),
@@ -700,9 +701,9 @@ class A1Terminal:
         debug_text = "🔍 SESSION DEBUG INFORMATION\n" + "="*50 + "\n\n"
         
         if not self.sessions:
-            debug_text += "❌ Keine Sessions vorhanden\n"
+            debug_text += "❌ No sessions available\n"
         else:
-            debug_text += f"📊 Anzahl Sessions: {len(self.sessions)}\n"
+            debug_text += f"📊 Number of Sessions: {len(self.sessions)}\n"
             debug_text += f"🔄 Current Session: {self.current_session_id}\n\n"
             
             # Session-Details
@@ -711,11 +712,11 @@ class A1Terminal:
                                                                  reverse=True), 1):
                 debug_text += f"SESSION #{i}:\n"
                 debug_text += f"   🆔 ID: {session_id}\n"
-                debug_text += f"   📅 Erstellt: {session_data.get('created_at', 'Unbekannt')}\n"
-                debug_text += f"   ⏰ Geändert: {session_data.get('last_modified', 'Unbekannt')}\n"
-                debug_text += f"   🤖 Model: {session_data.get('model', 'Nicht gesetzt')}\n"
+                debug_text += f"   📅 Created: {session_data.get('created_at', 'Unknown')}\n"
+                debug_text += f"   ⏰ Modified: {session_data.get('last_modified', 'Unknown')}\n"
+                debug_text += f"   🤖 Model: {session_data.get('model', 'Not set')}\n"
                 debug_text += f"   💬 Messages: {session_data.get('total_messages', 0)}\n"
-                debug_text += f"   📝 BIAS: {'Ja' if session_data.get('bias', '') else 'Nein'}\n"
+                debug_text += f"   📝 BIAS: {'Yes' if session_data.get('bias', '') else 'No'}\n"
                 
                 # Check for session file (any name, but with matching ID)
                 matching_files = [f for f in os.listdir(self.sessions_dir) if f.endswith(f"_session_{session_id}.json")]
@@ -1676,7 +1677,7 @@ class A1Terminal:
                     if old_path and os.path.abspath(old_path) != os.path.abspath(new_path):
                         os.remove(old_path)
                 except Exception as e:
-                    self.console_print(f"❌ Error beim Save: {e}", "warning")
+                    self.console_print(f"❌ Error Save: {e}", "warning")
             
             # Farbe change
             if new_color and new_color != current_color:
@@ -1690,7 +1691,7 @@ class A1Terminal:
                 self.update_session_list()
                 if hasattr(self, 'current_session_id') and self.current_session_id == session_id:
                     self.update_current_session_display()
-                self.console_print("✅ Session-Einstellungen saved", "success")
+                self.console_print("✅ Session-settings saved", "success")
             
             settings_dialog.destroy()
         
@@ -2205,7 +2206,7 @@ class A1Terminal:
         
         self.message_entry = ctk.CTkEntry(
             self.input_frame,
-            placeholder_text="Message eingeben...",
+            placeholder_text="insert prompt...",
             font=("Arial", self.config.get("ui_input_font_size", 12)),
             height=self.config.get("ui_input_height", 40)
         )
@@ -3054,12 +3055,20 @@ class A1Terminal:
     def on_model_select(self, choice):
         """Behandelt Model-Auswahl"""
         if choice and choice != "Keine Modelle available":
+            # Check if model actually changed
+            model_changed = (self.current_model != choice)
+            
             self.current_model = choice
             
             # WICHTIG: Nicht save während eine Session loaded is being
             if getattr(self, '_session_just_loaded', False):
                 # Session is being gerade loaded, nicht save
                 return
+            
+            # Set flag if model changed in existing session with messages
+            if model_changed and hasattr(self, 'chat_bubbles') and len(self.chat_bubbles) > 0:
+                self._model_just_changed = True
+                self.console_print(f"🔄 Model changed - full history will be sent with next message", "info")
             
             # Reset chat history only for new/empty sessions
             # Keep history for existing sessions with messages
@@ -3290,13 +3299,19 @@ class A1Terminal:
                 else:
                     print("🎯 No BIAS set")
                 
-                # Nur bei Session-Load: volle History, sonst nur BIAS und aktuelle User-Input
+                # Nur bei Session-Load oder Model-Wechsel: volle History, sonst nur BIAS und aktuelle User-Input
                 if getattr(self, '_session_just_loaded', False):
                     print("[INFO] Complete session history is being sent to the model (session was just loaded).")
                     modified_history = self.chat_history.copy()
                     if session_bias:
                         modified_history.insert(0, {"role": "system", "content": session_bias})
                     self._session_just_loaded = False
+                elif getattr(self, '_model_just_changed', False):
+                    print("[INFO] Complete session history is being sent to the model (model was just changed).")
+                    modified_history = self.chat_history.copy()
+                    if session_bias:
+                        modified_history.insert(0, {"role": "system", "content": session_bias})
+                    self._model_just_changed = False
                 else:
                     # Nur BIAS (falls gesetzt) und aktuelle User-Input
                     modified_history = []
@@ -3851,7 +3866,7 @@ class A1Terminal:
     
     def add_thinking_indicator(self):
         """Zeigt dezenten Denkprozess-Indikator an"""
-        thinking_message = "💭 Verarbeitet Ihre Anfrage..."
+        thinking_message = "💭 thinks..."
         bubble = self.add_to_chat(f"🤖 {self.current_model}", thinking_message)
         self.current_thinking_bubble = bubble
         return bubble
