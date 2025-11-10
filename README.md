@@ -13,13 +13,13 @@ Version 2.0 - Modular Architecture
 **Windows:**
 ```powershell
 # Run as Administrator (Right-click -> "Run as Administrator")
-.\install.bat
+.\scripts\install.bat
 ```
 
 **Linux/macOS:**
 ```bash
-chmod +x install.sh
-./install.sh
+chmod +x scripts/install.sh
+./scripts/install.sh
 ```
 
 ### What Gets Installed?
@@ -33,9 +33,7 @@ The script installs **fully automatically**:
 ### Start After Installation
 
 ```powershell
-cd a1_terminal_modular
-.\start.bat          # Windows
-./start.sh           # Linux/macOS
+.\start.bat          # Windows (from main folder)
 ```
 
 **Done!** The app starts with a working test model. 🎉
@@ -60,15 +58,16 @@ cd a1_terminal_modular
 The project is now **modularly** structured:
 
 ```
-Ki-whisperer/
-├── install.bat                 # Windows installation script
-├── install.sh                  # Linux/macOS installation script
-├── DOKUMENTATION.md            # Complete technical documentation
+A1-Terminal/
+├── start.bat                   # Windows: Quick start
 ├── README.md                   # This file
+├── DOCUMENTATION_EN.md         # Complete technical documentation
+│
+├── scripts/                    # Installation scripts
+│   ├── install.bat             # Windows installation
+│   └── install.sh              # Linux/macOS installation
 │
 └── a1_terminal_modular/        # Main application
-    ├── start.bat               # Windows: Quick start
-    ├── start.sh                # Linux/macOS: Quick start
     ├── main.py                 # Entry point
     ├── requirements.txt        # Python dependencies
     ├── a1_terminal_config.yaml # Configuration
@@ -91,7 +90,7 @@ Ki-whisperer/
 
 ## 📖 Documentation
 
-**[Complete Technical Documentation (DOKUMENTATION.md)](./DOKUMENTATION.md)**
+**[Complete Technical Documentation (DOCUMENTATION_EN.md)](./DOCUMENTATION_EN.md)**
 
 Contains:
 - ⚙️ Detailed architecture description
@@ -137,13 +136,13 @@ After installation, **tinyllama:1.1b** is already installed. You can download mo
 **Windows:**
 ```powershell
 # Run as Administrator (Right-click -> "Run as Administrator")
-.\install.bat
+.\scripts\install.bat
 ```
 
 **Linux/macOS:**
 ```bash
-chmod +x install.sh
-./install.sh
+chmod +x scripts/install.sh
+./scripts/install.sh
 ```
 
 The installation script automatically installs:
@@ -164,8 +163,7 @@ Visit [ollama.ai](https://ollama.ai) and install Ollama.
 #### 2. Install Dependencies
 
 ```powershell
-cd a1_terminal_modular
-pip install -r requirements.txt
+pip install -r a1_terminal_modular\requirements.txt
 ```
 
 #### 3. Start
@@ -174,32 +172,18 @@ pip install -r requirements.txt
 .\start.bat
 ```
 
-or
-
-```powershell
-python main.py
-```
-
 </details>
 
 ### After Installation
 
 **Windows:**
 ```powershell
-cd a1_terminal_modular
 .\start.bat
-```
-
-or
-
-```powershell
-python main.py
 ```
 
 **Linux/macOS:**
 ```bash
-cd a1_terminal_modular
-./start.sh
+./start.bat
 ```
 
 ---
@@ -207,8 +191,8 @@ cd a1_terminal_modular
 ## 🤝 Support
 
 For problems see:
-- 📖 [Troubleshooting in the documentation](./DOKUMENTATION.md#troubleshooting)
-- 🐛 [GitHub Issues](https://github.com/Nr44suessauer/Ki-whisperer/issues)
+- 📖 [Troubleshooting in the documentation](./DOCUMENTATION_EN.md#troubleshooting)
+- 🐛 [GitHub Issues](https://github.com/Nr44suessauer/A1-Terminal/issues)
 
 ---
 

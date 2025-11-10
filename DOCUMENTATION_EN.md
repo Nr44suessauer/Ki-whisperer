@@ -95,8 +95,8 @@ The project includes installation scripts that install **ALL dependencies fully 
 1. **Clone or download repository**
 ```powershell
 cd "C:\Users\<Username>\Documents"
-git clone https://github.com/Nr44suessauer/Ki-whisperer.git
-cd Ki-whisperer
+git clone https://github.com/Nr44suessauer/A1-Terminal.git
+cd A1-Terminal
 ```
 
 2. **Run installation script as Administrator**
