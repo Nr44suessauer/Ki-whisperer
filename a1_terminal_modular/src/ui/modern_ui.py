@@ -159,7 +159,7 @@ def setup_modern_ui(app):
         fg_color="#0f0f0f",
         corner_radius=8,
         border_width=3,
-        border_color="#4A4A4A"  # Standard-Grau, wird bei Session-Wechsel aktualisiert
+        border_color="#4A4A4A"  # Standard-Gray, is being bei Session-Wechsel aktualisiert
     )
     app.chat_display_frame.pack(fill="both", expand=True, padx=5, pady=5)
     
@@ -173,7 +173,7 @@ def setup_modern_ui(app):
     
     app.message_entry = ctk.CTkEntry(
         input_frame,
-        placeholder_text="💬 Nachricht eingeben...",
+        placeholder_text="💬 Message eingeben...",
         font=("Arial", 12),
         corner_radius=6,
         height=40
@@ -265,7 +265,7 @@ def _setup_export_tab(app, parent):
     md_info.pack(side="left", fill="x", expand=True, padx=10)
     
     ctk.CTkLabel(md_info, text="Markdown Export", font=("Arial", 14, "bold"), anchor="w").pack(anchor="w")
-    ctk.CTkLabel(md_info, text="Exportiert Session als formatierte .md Datei", 
+    ctk.CTkLabel(md_info, text="Exportiert Session als formatierte .md File", 
                 font=("Arial", 10), text_color="#888888", anchor="w").pack(anchor="w")
     
     md_btn = ctk.CTkButton(
@@ -289,7 +289,7 @@ def _setup_export_tab(app, parent):
     json_info.pack(side="left", fill="x", expand=True, padx=10)
     
     ctk.CTkLabel(json_info, text="JSON Export", font=("Arial", 14, "bold"), anchor="w").pack(anchor="w")
-    ctk.CTkLabel(json_info, text="Vollständiger Daten-Export inkl. Metadaten", 
+    ctk.CTkLabel(json_info, text="Complete data export incl. metadata", 
                 font=("Arial", 10), text_color="#888888", anchor="w").pack(anchor="w")
     
     json_btn = ctk.CTkButton(
@@ -326,7 +326,7 @@ def _setup_config_tab(app, parent):
     # Simple color inputs for now - can be enhanced later
     info_label = ctk.CTkLabel(
         colors_frame,
-        text="Farbkonfiguration über Config-Tab in der alten Version verfügbar.\nModernes Theme wird verwendet.",
+        text="Color configuration via Config tab available in old version.\nModern theme is being used.",
         font=("Arial", 10),
         text_color="#888888"
     )

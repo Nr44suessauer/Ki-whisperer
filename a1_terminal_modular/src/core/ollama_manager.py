@@ -6,7 +6,7 @@ import time
 
 class OllamaManager:
     def _get_fallback_models(self):
-        """Fallback-Liste mit bewährten Modellen"""
+        """Fallback-List mit bewährten Modellen"""
         return sorted([
             # Kleine Modelle (< 4GB)
             "tinyllama:1.1b", "phi3:mini", "gemma:2b", "orca-mini:3b",
@@ -67,7 +67,7 @@ class OllamaManager:
         self.client = ollama.Client()
     
     def is_ollama_running(self):
-        """Prüft ob Ollama läuft"""
+        """Prüft ob Ollama running"""
         try:
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             return response.status_code == 200
@@ -85,7 +85,7 @@ class OllamaManager:
                 return [model['name'] for model in data.get('models', [])]
             return []
         except Exception as e:
-            print(f"Fehler beim Abrufen der Modelle: {e}")
+            print(f"Error beim Abrufen der Modelle: {e}")
             return []
     
     def get_all_ollama_models(self):
@@ -101,7 +101,7 @@ class OllamaManager:
             if response.status_code == 200:
                 data = response.json()
                 models = data.get('repositories', [])
-                # Erweitere mit beliebten Varianten falls verfügbar
+                # Erweitere mit beliebten Varianten falls available
                 expanded_models = []
                 for model in models:
                     expanded_models.append(model)
@@ -111,25 +111,25 @@ class OllamaManager:
                             expanded_models.append(variant)
                 return sorted(expanded_models)
             else:
-                # Fallback auf bewährte Modell-Liste
+                # Fallback auf bewährte Model-List
                 return self._get_fallback_models()
         except Exception as e:
-            print(f"Fehler beim Abrufen der Live-Modelle: {e}")
+            print(f"Error beim Abrufen der Live-Modelle: {e}")
             return self._get_fallback_models()
     
     def download_model(self, model_name, progress_callback=None, parent_messenger=None):
-        """Lädt ein Modell mit optimierter Performance, detailliertem Logging und Stop-Funktionalität herunter"""
+        """Lädt ein Model mit optimierter Performance, detailliertem Logging und Stop-Funktionalität herunter"""
         import time
         
         print(f"\n🚀 DOWNLOAD START: {model_name}")
         start_time = time.time()
         
         try:
-            # Verwende die moderne ollama-client API statt requests
-            print(f"📡 Verwende Ollama Client für {model_name}")
-            print(f"🔗 Basis URL: {self.base_url}")
+            # Use modern ollama client API instead of requests
+            print(f"📡 Using Ollama client for {model_name}")
+            print(f"🔗 Base URL: {self.base_url}")
             
-            # Stream-basierter Download mit ollama client
+            # Stream-based download with ollama client
             response_stream = self.client.pull(model_name, stream=True)
             
             total_size = 0
@@ -152,7 +152,7 @@ class OllamaManager:
                 
                 current_time = time.time()
                 
-                # Status-Ausgabe nur bei Änderungen (keine Redundanz!)
+                # Status-Output nur bei Änderungen (keine Redundanz!)
                 if 'status' in chunk:
                     status = chunk['status']
                     
@@ -166,7 +166,7 @@ class OllamaManager:
                         total_size = chunk['total']
                         downloaded_size = chunk['completed']
                         
-                        # Geschwindigkeitsberechnung und Ausgabe nur alle 2 Sekunden
+                        # Geschwindigkeitsberechnung und Output nur alle 2 Sekunden
                         time_diff = current_time - last_progress_update
                         if time_diff >= 2.0:  # Reduziert auf alle 2 Sekunden
                             speed_bytes = (downloaded_size - last_downloaded) / time_diff
@@ -190,7 +190,7 @@ class OllamaManager:
                             eta_seconds = remaining_bytes / avg_speed if avg_speed > 0 else 0
                             eta_minutes = eta_seconds / 60
                             
-                            # Kompakte Ausgabe in einer Zeile
+                            # Kompakte Output in einer Zeile
                             print(f"📊 {progress_percent:.1f}% ({downloaded_mb:.1f}/{total_mb:.1f}MB) | {speed_mb:.1f}MB/s | ETA: {eta_minutes:.1f}min")
                             
                             last_progress_update = current_time
@@ -228,14 +228,14 @@ class OllamaManager:
             return False
     
     def delete_model(self, model_name):
-        """Löscht ein Modell"""
+        """Löscht ein Model"""
         try:
             url = f"{self.base_url}/api/delete"
             data = {"name": model_name}
             response = requests.delete(url, json=data)
             return response.status_code == 200
         except Exception as e:
-            print(f"Fehler beim Löschen: {e}")
+            print(f"Error beim Delete: {e}")
             return False
     
     def list_models(self):
@@ -243,7 +243,7 @@ class OllamaManager:
         return self.get_available_models()
     
     def chat_stream(self, model_name, messages):
-        """Stream-Chat mit einem Modell - gibt nur Content-Chunks zurück"""
+        """Stream-Chat mit einem Model - gibt nur Content-Chunks back"""
         try:
             response = self.client.chat(
                 model=model_name,
@@ -257,7 +257,7 @@ class OllamaManager:
                     if content:
                         yield content
         except Exception as e:
-            print(f"Chat-Stream-Fehler: {e}")
+            print(f"Chat-Stream-Error: {e}")
             yield ""
     
     def download_model_stream(self, model_name):
@@ -267,11 +267,11 @@ class OllamaManager:
             for chunk in response:
                 yield chunk
         except Exception as e:
-            print(f"Download-Fehler: {e}")
+            print(f"Download-Error: {e}")
             yield {"status": "error", "error": str(e)}
     
     def chat_with_model(self, model_name, message, chat_history=None):
-        """Chat mit einem Modell mit Anti-Redundanz Konsolen-Ausgabe"""
+        """Chat mit einem Model mit Anti-Redundanz Konsolen-Output"""
         import sys
         try:
             messages = chat_history or []
@@ -317,9 +317,9 @@ class OllamaManager:
                                     else:
                                         display = self.total_content
                                     
-                                    # Überschreibe nur wenn sich der Inhalt wesentlich geändert hat
+                                    # Überschreibe nur wenn sich der Inhalt wesentlich changed hat
                                     if display != self.last_display:
-                                        # Lösche vorherige Zeile und schreibe neu
+                                        # Lösche vorherige Zeile und schreibe new
                                         if self.last_display:
                                             sys.stdout.write('\r' + ' ' * len(self.last_display) + '\r')
                                         sys.stdout.write(display[:100])  # Max 100 Zeichen
@@ -331,7 +331,7 @@ class OllamaManager:
                         return chunk
                         
                     except StopIteration:
-                        # Finale Ausgabe
+                        # Finale Output
                         if self.total_content:
                             sys.stdout.write('\r' + ' ' * len(self.last_display) + '\r')
                             final_words = self.total_content.split()
@@ -347,5 +347,5 @@ class OllamaManager:
             return AntiRedundancyWrapper(response)
             
         except Exception as e:
-            print(f"\n❌ Fehler beim Chat: {e}")
+            print(f"\n❌ Error beim Chat: {e}")
             return None

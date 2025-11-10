@@ -242,7 +242,7 @@ def setup_ultimate_ui(app):
         fg_color="#0f0f0f",
         corner_radius=8,
         border_width=3,
-        border_color="#4A4A4A"  # Standard-Grau, wird bei Session-Wechsel aktualisiert
+        border_color="#4A4A4A"  # Standard-Gray, is being bei Session-Wechsel aktualisiert
     )
     app.chat_display_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
     
@@ -360,7 +360,7 @@ def create_typing_indicator(parent):
 
 
 def send_message_from_textbox(app, event=None):
-    """Sendet Nachricht aus Textbox"""
+    """Sendet Message aus Textbox"""
     if event and event.state & 0x4:  # Ctrl gedrückt
         return None  # Erlaube Newline
     
@@ -411,7 +411,7 @@ def show_settings(app):
 def show_export_dialog(app):
     """Zeigt Export Dialog"""
     if not app.current_session_id:
-        messagebox.showwarning("Keine Session", "Bitte wählen Sie zuerst eine Session aus.")
+        messagebox.showwarning("No Session", "Bitte select You zuerst eine Session aus.")
         return
     
     dialog = ctk.CTkToplevel(app.root)
@@ -422,7 +422,7 @@ def show_export_dialog(app):
     
     ctk.CTkLabel(
         dialog,
-        text="📤 Export Format wählen",
+        text="📤 Export Format select",
         font=("Arial", 16, "bold")
     ).pack(pady=20)
     
@@ -455,14 +455,14 @@ def show_export_dialog(app):
 def show_model_download(app):
     """Zeigt Model Download Dialog"""
     dialog = ctk.CTkToplevel(app.root)
-    dialog.title("➕ Modell herunterladen")
+    dialog.title("➕ Model herunterladen")
     dialog.geometry("450x250")
     dialog.transient(app.root)
     dialog.grab_set()
     
     ctk.CTkLabel(
         dialog,
-        text="➕ Neues Modell hinzufügen",
+        text="➕ Add new model",
         font=("Arial", 16, "bold")
     ).pack(pady=20)
     
@@ -499,7 +499,7 @@ def show_model_download(app):
 def show_bias_editor(app):
     """Zeigt BIAS Editor Dialog"""
     if not app.current_session_id:
-        messagebox.showwarning("Keine Session", "Bitte wählen Sie zuerst eine Session aus.")
+        messagebox.showwarning("No Session", "Bitte select You zuerst eine Session aus.")
         return
     
     dialog = ctk.CTkToplevel(app.root)
@@ -516,7 +516,7 @@ def show_bias_editor(app):
     
     ctk.CTkLabel(
         dialog,
-        text="Setzen Sie den Kontext und die Instruktionen für diese Session",
+        text="Set the context and instructions for this session",
         font=("Arial", 10),
         text_color="#888888"
     ).pack(pady=(0, 10))
@@ -533,11 +533,11 @@ def show_bias_editor(app):
         app.current_session_bias = textbox.get("1.0", "end-1c")
         app.save_current_session()
         dialog.destroy()
-        messagebox.showinfo("Gespeichert", "BIAS wurde gespeichert!")
+        messagebox.showinfo("Gespeichert", "BIAS wurde saved!")
     
     ctk.CTkButton(
         dialog,
-        text="💾 Speichern",
+        text="💾 Save",
         command=save,
         width=150,
         height=40,
@@ -549,7 +549,7 @@ def show_bias_editor(app):
 
 def clear_chat(app):
     """Löscht Chat-Historie"""
-    if messagebox.askyesno("Chat leeren", "Möchten Sie den Chat wirklich leeren?"):
+    if messagebox.askyesno("Chat leeren", "Möchten You den Chat wirklich leeren?"):
         for bubble in app.chat_bubbles:
             bubble.destroy()
         app.chat_bubbles = []
@@ -560,7 +560,7 @@ def clear_chat(app):
 def setup_keyboard_shortcuts(app):
     """Setup Keyboard Shortcuts"""
     
-    # Ctrl+N: Neue Session
+    # Ctrl+N: New Session
     app.root.bind("<Control-n>", lambda e: app.create_new_session())
     
     # Ctrl+K: Model wechseln (Focus auf Dropdown)

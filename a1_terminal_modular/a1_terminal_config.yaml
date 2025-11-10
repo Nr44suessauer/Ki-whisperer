@@ -1,30 +1,30 @@
-# A1-Terminal Konfigurationsdatei
-# Diese Datei wird automatisch erstellt und aktualisiert
-# Alle Änderungen werden beim Anwenden in der GUI gespeichert
+# A1-Terminal Configuration File
+# This file is automatically created and updated
+# All changes are saved when applying in the GUI
 
 # ========================================
-# CHAT-BUBBLE FARBEN
+# CHAT BUBBLE COLORS
 # ========================================
-# Farben für Chat-Bubbles (Hex-Codes)
+# Colors for chat bubbles (Hex codes)
 bubble_colors:
   bubble_colors: "{'ai_bg_color': '#1E3A5F', 'ai_text_color': 'white', 'system_bg_color': '#722F37', 'system_text_color': 'white', 'user_bg_color': '#003300', 'user_text_color': '#00FF00'}"
-  ai_bg_color: "#1E3A5F"  # AI-Modell
-  ai_text_color: "white"  # AI-Modell
-  system_bg_color: "#722F37"  # System-Nachrichten
-  system_text_color: "white"  # System-Nachrichten
+  ai_bg_color: "#1E3A5F"  # AI Model
+  ai_text_color: "white"  # AI Model
+  system_bg_color: "#722F37"  # System Messages
+  system_text_color: "white"  # System Messages
   ui_accent_color: "#2B8A3E"
   ui_bg_color: "#1a1a1a"
   ui_border_color: "#3a3a3a"
   ui_fg_color: "#2b2b2b"
   ui_hover_color: "#37A24B"
   ui_text_color: "white"
-  user_bg_color: "#003300"  # Sie (Matrix-Style)
-  user_text_color: "#00FF00"  # Sie (Matrix-Style)
-# Terminal/Konsolen-Ausgabe Styling
+  user_bg_color: "#003E00"  # You (Matrix-Style)
+  user_text_color: "#00FF00"  # You (Matrix-Style)
+# Terminal/Console Output Styling
 console:
   console: "None"
 
-# Flache Struktur für Kompatibilität (wird automatisch generiert)
+# Flat structure for compatibility (automatically generated)
 ai_bg_color: '#1E3A5F'
 ai_font: Consolas
 ai_font_size: 15
@@ -87,7 +87,7 @@ ui_tab_height: 40
 ui_text_color: white
 ui_window_height: 900
 ui_window_width: 1463
-user_bg_color: '#003300'
+user_bg_color: '#003E00'
 user_font: Courier New
 user_font_size: 15
 user_text_color: '#00FF00'

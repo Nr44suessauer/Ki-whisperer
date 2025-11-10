@@ -1,4 +1,4 @@
-"""ChatBubble Widget für Chat-Nachrichten"""
+"""ChatBubble Widget für Chat-Messages"""
 
 import customtkinter as ctk
 from tkinter import messagebox
@@ -15,7 +15,7 @@ class ChatBubble(ctk.CTkFrame):
         self.app_config = app_config or {}
         
         # Bestimme Bubble-Stil basierend auf Sender und Config
-        if sender == "Sie":
+        if sender == "You":
             bubble_color = self.app_config.get("user_bg_color", "#003300")
             text_color = self.app_config.get("user_text_color", "#00FF00")
             font = self.app_config.get("user_font", "Courier New")
@@ -36,8 +36,8 @@ class ChatBubble(ctk.CTkFrame):
         
         self.configure(fg_color=bubble_color, corner_radius=10)
         
-        # Matrix-Effekt für "Sie"-Bubbles
-        if sender == "Sie":
+        # Matrix-Effekt für "You"-Bubbles
+        if sender == "You":
             border_color = self.app_config.get("user_text_color", "#00FF00")
             self.configure(border_width=2, border_color=border_color)
         
@@ -87,11 +87,11 @@ class ChatBubble(ctk.CTkFrame):
         )
         self.message_label.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         
-        # Füge Nachricht hinzu und deaktiviere Bearbeitung
+        # Füge Message hinzu und deaktiviere Bearbeitung
         self.message_label.insert("1.0", message)
         self.message_label.configure(state="disabled")
         
-        # Nach dem Rendering: Passe Höhe automatisch an den gesamten Inhalt an
+        # Nach dem Rendering: Passe Höhe automatic an den gesamten Inhalt an
         self.after(10, self.adjust_height_to_content)
         
         # Packe Bubble mit korrekter Ausrichtung
@@ -108,7 +108,7 @@ class ChatBubble(ctk.CTkFrame):
             self.message_label.configure(state="normal")
             
             # Hole die aktuelle Schriftgröße und Font
-            if self.sender == "Sie":
+            if self.sender == "You":
                 font_size = self.app_config.get("user_font_size", 11)
                 font_name = self.app_config.get("user_font", "Courier New")
             elif "🤖" in self.sender:
@@ -123,7 +123,7 @@ class ChatBubble(ctk.CTkFrame):
             
             # Falls Breite noch nicht bekannt (Widget nicht gerendert), verwende Standardwert
             if textbox_width <= 1:
-                textbox_width = 600  # Schätzwert, wird beim nächsten Update korrigiert
+                textbox_width = 600  # Schätzwert, is being beim nächsten Update korrigiert
                 # Plane erneute Anpassung nach vollständigem Rendering
                 self.after(100, self.adjust_height_to_content)
             
@@ -163,23 +163,23 @@ class ChatBubble(ctk.CTkFrame):
             # Aktualisiere die Höhe der Textbox
             self.message_label.configure(height=needed_height)
             
-            # Deaktiviere wieder
+            # Disable again
             self.message_label.configure(state="disabled")
             
         except Exception as e:
-            print(f"Fehler bei automatischer Höhenanpassung: {e}")
-            # Bei Fehler: Deaktiviere trotzdem die Textbox
+            print(f"Error during automatic height adjustment: {e}")
+            # On error: Disable textbox anyway
             try:
                 self.message_label.configure(state="disabled")
             except:
                 pass
     
     def update_style(self, new_config):
-        """Aktualisiert das Bubble-Styling basierend auf neuer Konfiguration"""
+        """Aktualisiert das Bubble-Styling basierend auf neuer Configuration"""
         self.app_config = new_config
         
         # Bestimme neue Styling-Parameter
-        if self.sender == "Sie":
+        if self.sender == "You":
             bubble_color = self.app_config.get("user_bg_color", "#003300")
             text_color = self.app_config.get("user_text_color", "#00FF00")
             font = self.app_config.get("user_font", "Courier New")
@@ -200,7 +200,7 @@ class ChatBubble(ctk.CTkFrame):
         
         # Aktualisiere Bubble-Farben
         self.configure(fg_color=bubble_color)
-        if self.sender == "Sie" and border_color:
+        if self.sender == "You" and border_color:
             self.configure(border_color=border_color)
         
         # Aktualisiere Header-Styling
@@ -228,7 +228,7 @@ class ChatBubble(ctk.CTkFrame):
         self.message_label.configure(state="disabled")
     
     def recalculate_height(self, font_size):
-        """Berechnet die Bubble-Höhe neu basierend auf neuer Schriftgröße"""
+        """Berechnet die Bubble-Höhe new basierend auf neuer Schriftgröße"""
         try:
             # Optimierte Höhenberechnung - identisch zur initialen Berechnung
             chars_per_line = 70
@@ -256,18 +256,18 @@ class ChatBubble(ctk.CTkFrame):
             # Aktualisiere die Höhe
             self.message_label.configure(height=new_height)
             
-            # Nach kurzer Zeit exakte Nachmessung
+            # After short time exact measurement
             self.after(25, self.adjust_height_to_content)
             
         except Exception as e:
-            print(f"Höhenneuberechnung fehlgeschlagen: {e}")
+            print(f"Height recalculation failed: {e}")
     
     def copy_message(self):
-        """Kopiert die Nachricht in die Zwischenablage"""
+        """Copies the message to clipboard"""
         try:
             self.clipboard_clear()
             self.clipboard_append(self.message)
-            self.update()  # Stelle sicher, dass Clipboard-Änderung verarbeitet wird
+            self.update()  # Stelle sicher, dass Clipboard-Änderung verarbeitet is being
             
             # Kurzes visuelles Feedback
             original_text = self.copy_btn.cget("text")
@@ -275,7 +275,7 @@ class ChatBubble(ctk.CTkFrame):
             self.after(1000, lambda: self.copy_btn.configure(text=original_text))
             
         except Exception as e:
-            print(f"Fehler beim Kopieren: {e}")
+            print(f"Error beim Kopieren: {e}")
             # Fallback: Zeige Fehlermeldung
-            self.copy_btn.configure(text="❌ Fehler")
+            self.copy_btn.configure(text="❌ Error")
             self.after(1000, lambda: self.copy_btn.configure(text="📋 Kopieren"))

@@ -18,10 +18,10 @@ class ModelInfoDropdown(ctk.CTkFrame):
         # Haupt-Container
         self.configure(fg_color="transparent")
         
-        # Button für Dropdown (zeigt ausgewähltes Modell)
+        # Button für Dropdown (zeigt ausgewähltes Model)
         self.dropdown_btn = ctk.CTkButton(
             self,
-            text="Modell auswählen...",
+            text="Select model...",
             command=self.toggle_dropdown,
             anchor="w",
             height=38,
@@ -31,7 +31,7 @@ class ModelInfoDropdown(ctk.CTkFrame):
         )
         self.dropdown_btn.pack(fill="x", padx=0, pady=0)
         
-        # Info-Label unter dem Button (zeigt Details zum ausgewählten Modell)
+        # Info-Label unter dem Button (zeigt Details zum ausgewählten Model)
         self.info_label = ctk.CTkLabel(
             self,
             text="",
@@ -94,7 +94,7 @@ class ModelInfoDropdown(ctk.CTkFrame):
         self.dropdown_frame.update_idletasks()
         canvas.configure(scrollregion=canvas.bbox("all"))
         
-        # Speichere Container statt Frame für späteres Löschen
+        # Speichere Container statt Frame für späteres Delete
         self.dropdown_container = dropdown_container
         self.dropdown_visible = True
     
@@ -111,8 +111,8 @@ class ModelInfoDropdown(ctk.CTkFrame):
         self.dropdown_visible = False
     
     def add_model_item(self, model_name, model_info):
-        """Fügt ein Modell-Item zum Dropdown hinzu"""
-        # Container für Modell-Item
+        """Fügt ein Model-Item zum Dropdown hinzu"""
+        # Container für Model-Item
         item_frame = ctk.CTkFrame(
             self.dropdown_frame,
             fg_color=("#e8e8e8", "#353535"),
@@ -135,7 +135,7 @@ class ModelInfoDropdown(ctk.CTkFrame):
         item_frame.bind("<Enter>", on_enter)
         item_frame.bind("<Leave>", on_leave)
         
-        # Modell-Name (fett)
+        # Model-Name (fett)
         name_label = ctk.CTkLabel(
             item_frame,
             text=model_name,
@@ -147,7 +147,7 @@ class ModelInfoDropdown(ctk.CTkFrame):
         name_label.bind("<Enter>", on_enter)
         name_label.bind("<Leave>", on_leave)
         
-        # Modell-Info (klein, grau)
+        # Model-Info (klein, grau)
         size = model_info.get("size", "?")
         param_count = model_info.get("parameters", "")
         model_type = model_info.get("type", "")
@@ -160,7 +160,7 @@ class ModelInfoDropdown(ctk.CTkFrame):
         if model_type:
             info_parts.append(f"🏷️ {model_type}")
         
-        info_text = " • ".join(info_parts) if info_parts else "Modell verfügbar"
+        info_text = " • ".join(info_parts) if info_parts else "Model available"
         
         info_label = ctk.CTkLabel(
             item_frame,
@@ -175,7 +175,7 @@ class ModelInfoDropdown(ctk.CTkFrame):
         info_label.bind("<Leave>", on_leave)
     
     def select_model(self, model_name, model_info):
-        """Wählt ein Modell aus"""
+        """Selects a model"""
         self.selected_model = model_name
         
         # Update Button-Text
@@ -189,11 +189,11 @@ class ModelInfoDropdown(ctk.CTkFrame):
         
         info_parts = []
         if size:
-            info_parts.append(f"Größe: {size}")
+            info_parts.append(f"Size: {size}")
         if param_count:
-            info_parts.append(f"Parameter: {param_count}")
+            info_parts.append(f"Parameters: {param_count}")
         if model_type:
-            info_parts.append(f"Typ: {model_type}")
+            info_parts.append(f"Type: {model_type}")
         
         self.info_label.configure(text=" • ".join(info_parts) if info_parts else "")
         
@@ -212,23 +212,23 @@ class ModelInfoDropdown(ctk.CTkFrame):
         if self.dropdown_visible:
             self.hide_dropdown()
         
-        # Reset Auswahl wenn Modell nicht mehr verfügbar
+        # Reset Auswahl wenn Model nicht mehr available
         if self.selected_model and self.selected_model not in models_dict:
             self.selected_model = None
-            self.dropdown_btn.configure(text="Modell auswählen...")
+            self.dropdown_btn.configure(text="Select model...")
             self.info_label.configure(text="")
     
     def get_selected(self):
-        """Gibt das ausgewählte Modell zurück"""
+        """Gibt das ausgewählte Model back"""
         return self.selected_model
     
     def set_selected(self, model_name):
-        """Setzt das ausgewählte Modell"""
+        """Setzt das ausgewählte Model"""
         if model_name in self.models_dict:
             self.select_model(model_name, self.models_dict[model_name])
         else:
-            # Modell ist nicht in der Liste, aber zeige es trotzdem an
+            # Model is not in list, but display it anyway
             self.selected_model = model_name
             display_name = model_name[:35] + "..." if len(model_name) > 35 else model_name
             self.dropdown_btn.configure(text=display_name)
-            self.info_label.configure(text="Modell aus Session geladen")
+            self.info_label.configure(text="Model loaded from session")

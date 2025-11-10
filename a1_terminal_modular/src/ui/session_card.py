@@ -16,7 +16,7 @@ class SessionCard(ctk.CTkFrame):
         self.on_delete = on_delete
         self.is_active = is_active
         
-        # Styling basierend auf Aktiv-Status
+        # Styling basierend auf Active-Status
         if is_active:
             self.configure(
                 fg_color="#1f538d",
@@ -79,7 +79,7 @@ class SessionCard(ctk.CTkFrame):
         info_frame.pack(fill="x", padx=10, pady=5)
         
         # Model Info
-        model = self.session_data.get('model', 'Kein Modell')
+        model = self.session_data.get('model', 'Kein Model')
         model_label = ctk.CTkLabel(
             info_frame,
             text=f"🤖 {model}",
@@ -93,7 +93,7 @@ class SessionCard(ctk.CTkFrame):
         msg_count = len(self.session_data.get('messages', []))
         msg_label = ctk.CTkLabel(
             info_frame,
-            text=f"💬 {msg_count} Nachrichten",
+            text=f"💬 {msg_count} Messages",
             font=("Arial", 9),
             anchor="w",
             text_color="#aaaaaa"
@@ -151,7 +151,7 @@ class SessionCard(ctk.CTkFrame):
             self.configure(border_color="#4a4a4a")
     
     def set_active(self, active):
-        """Setzt den Aktiv-Status"""
+        """Setzt den Active-Status"""
         self.is_active = active
         if active:
             self.configure(

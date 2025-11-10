@@ -4,7 +4,7 @@ import customtkinter as ctk
 import tkinter as tk
 
 class ResizablePane(ctk.CTkFrame):
-    """Ein Panel das mit einem Draggable-Divider die Größe ändern kann"""
+    """Ein Panel das mit einem Draggable-Divider die Größe change kann"""
     
     def __init__(self, master, orient="horizontal", sash_width=4, **kwargs):
         super().__init__(master, **kwargs)
@@ -17,7 +17,7 @@ class ResizablePane(ctk.CTkFrame):
         self.drag_start_pos = None
         self.last_sizes = {}  # Speichert letzte bekannte Größen
         
-        # Grid-Konfiguration
+        # Grid-Configuration
         if orient == "horizontal":
             self.grid_rowconfigure(0, weight=1)
         else:

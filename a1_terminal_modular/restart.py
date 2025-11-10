@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Restart Script für A1-Terminal
-Startet die Anwendung nach einer kurzen Verzögerung neu
+Startet die Anwendung nach einer kurzen Verzögerung new
 """
 
 import sys
@@ -10,10 +10,10 @@ import time
 import os
 
 def restart_application():
-    """Startet die Anwendung neu"""
+    """Startet die Anwendung new"""
     try:
-        print("🔄 Starte A1-Terminal neu...")
-        time.sleep(0.5)  # Kurze Pause damit die alte Instanz schließen kann
+        print("🔄 Starte A1-Terminal new...")
+        time.sleep(0.5)  # Kurze Pause damit die alte Instanz close kann
         
         # Aktuelles Arbeitsverzeichnis
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -29,12 +29,12 @@ def restart_application():
             subprocess.Popen([python_exe, main_script], 
                            cwd=current_dir,
                            creationflags=subprocess.CREATE_NEW_CONSOLE if sys.platform == 'win32' else 0)
-            print("✅ A1-Terminal wurde neu gestartet")
+            print("✅ A1-Terminal wurde new started")
         else:
-            print(f"❌ Fehler: main.py nicht gefunden in {current_dir}")
+            print(f"❌ Error: main.py nicht gefunden in {current_dir}")
             
     except Exception as e:
-        print(f"❌ Fehler beim Neustart: {e}")
+        print(f"❌ Error beim Neustart: {e}")
 
 if __name__ == "__main__":
     restart_application()

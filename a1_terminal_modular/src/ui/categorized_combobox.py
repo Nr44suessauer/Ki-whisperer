@@ -14,10 +14,10 @@ class CategorizedComboBox(ctk.CTkComboBox):
         self.bind("<Enter>", lambda e: self.focus_set())
     
     def update_values_from_categories(self):
-        """Erstellt eine flache Liste aus den kategorisierten Werten"""
+        """Erstellt eine flache List aus den kategorisierten Werten"""
         self.flat_values = []
         for category_name, models in self.categories_dict.items():
-            if models:  # Nur Kategorien mit Inhalten anzeigen
+            if models:  # Nur Kategorien mit Inhalten show
                 self.flat_values.append(f"--- {category_name} ---")
                 self.flat_values.extend(models)
     
@@ -28,7 +28,7 @@ class CategorizedComboBox(ctk.CTkComboBox):
         self.configure(values=self.flat_values)
     
     def get_selected_model(self):
-        """Gibt das ausgewählte Modell zurück (ohne Kategorie-Headers)"""
+        """Gibt das ausgewählte Model back (ohne Kategorie-Headers)"""
         selected = self.get()
         if selected.startswith("--- ") and selected.endswith(" ---"):
             return None  # Kategorie-Header ausgewählt

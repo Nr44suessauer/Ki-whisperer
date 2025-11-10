@@ -1,4 +1,4 @@
-"""A1Terminal Hauptklasse"""
+"""A1Terminal Main Class"""
 
 import customtkinter as ctk
 import tkinter as tk
@@ -22,24 +22,24 @@ from src.ui.model_info_dropdown import ModelInfoDropdown
 from src.core.ollama_manager import OllamaManager
 
 class A1Terminal:
-    """Hauptanwendungsklasse"""
+    """Main application class"""
     def __init__(self):
         self._session_just_loaded = False
         
-        # YAML-Konfigurationsdatei ZUERST laden
+        # Load YAML configuration file FIRST
         self.config_file = "a1_terminal_config.yaml"
         self.config = self.load_config()
         
-        # Jetzt root mit Config-Werten erstellen
+        # Now create root with config values
         self.root = ctk.CTk()
         self.root.title("A1-Terminal - Ollama Chat Client")
         
-        # Fenstergröße aus Config
+        # Window size from config
         window_width = self.config.get('ui_window_width', 1400)
         window_height = self.config.get('ui_window_height', 900)
         self.root.geometry(f"{window_width}x{window_height}")
         
-        # Fenster resizeable machen und Mindestgröße setzen
+        # Make window resizable and set minimum size
         self.root.resizable(True, True)
         self.root.minsize(900, 500)
         self.root.maxsize(2560, 1440)
@@ -48,35 +48,35 @@ class A1Terminal:
         self.current_model = None
         self.chat_history = []
         
-        # Stop-Funktionalität für Generation und Downloads
+        # Stop functionality for generation and downloads
         self.generation_stopped = False
         self.download_stopped = False
         self.current_generation_thread = None
         self.current_download_thread = None
         
-        # Progressive Message-Anzeige
+        # Progressive message display
         self.response_message_widget = None
         self.current_response_text = ""
         
-        # Nachrichten-Historie für Pfeiltasten-Navigation
+        # Message history for arrow key navigation
         self.message_history = []
         self.history_index = -1
         
-        # Chat-Bubbles für Session Management
+        # Chat bubbles for session management
         self.chat_bubbles = []
         
-        # Session Management Variablen früh initialisieren
+        # Initialize session management variables early
         self.sessions = {}
         self.current_session_id = None
         self.current_session_bias = ""
         self.bias_auto_save_timer = None
         
-        # Sessions-Verzeichnis früh initialisieren
+        # Initialize sessions directory early
         self.sessions_dir = os.path.join(os.getcwd(), "sessions")
         if not os.path.exists(self.sessions_dir):
             os.makedirs(self.sessions_dir)
         
-        # Auto-Save Timer für Session-Speicherung
+        # Auto-save timer for session saving
         self.auto_save_timer = None
         
         # Setup UI
@@ -84,182 +84,182 @@ class A1Terminal:
         self.check_ollama_status()
     
     def get_default_config(self):
-        """Gibt die Standard-Konfiguration zurück"""
+        """Returns the default configuration"""
         return {
-            # ========== BUBBLE-FARBEN ==========
-            "user_bg_color": "#003300",      # Sie - Hintergrund
-            "user_text_color": "#00FF00",    # Sie - Text (Matrix)
-            "ai_bg_color": "#1E3A5F",        # AI - Hintergrund
+            # ========== BUBBLE COLORS ==========
+            "user_bg_color": "#003300",      # You - Background
+            "user_text_color": "#00FF00",    # You - Text (Matrix)
+            "ai_bg_color": "#1E3A5F",        # AI - Background
             "ai_text_color": "white",        # AI - Text
-            "system_bg_color": "#722F37",    # System - Hintergrund
+            "system_bg_color": "#722F37",    # System - Background
             "system_text_color": "white",    # System - Text
             
-            # ========== SCHRIFTARTEN ==========
-            "user_font": "Courier New",      # Sie - Matrix-Font
-            "user_font_size": 11,            # Sie - Individuelle Größe
-            "ai_font": "Consolas",           # AI - Code-Font
-            "ai_font_size": 11,              # AI - Individuelle Größe
-            "system_font": "Arial",          # System - Standard-Font
-            "system_font_size": 10,          # System - Individuelle Größe
+            # ========== FONTS ==========
+            "user_font": "Courier New",      # You - Matrix font
+            "user_font_size": 11,            # You - Individual size
+            "ai_font": "Consolas",           # AI - Code font
+            "ai_font_size": 11,              # AI - Individual size
+            "system_font": "Arial",          # System - Standard font
+            "system_font_size": 10,          # System - Individual size
             
-            # ========== UI-LAYOUT ==========
-            "ui_session_panel_width": 350,   # Breite des Session-Panels (px)
-            "ui_window_width": 1400,         # Fensterbreite beim Start (px)
-            "ui_window_height": 900,         # Fensterhöhe beim Start (px)
-            "ui_padding_main": 10,           # Hauptabstand außen (px)
-            "ui_padding_content": 5,         # Inhaltsabstand (px)
+            # ========== UI LAYOUT ==========
+            "ui_session_panel_width": 350,   # Width of session panel (px)
+            "ui_window_width": 1400,         # Window width at startup (px)
+            "ui_window_height": 900,         # Window height at startup (px)
+            "ui_padding_main": 10,           # Main outer padding (px)
+            "ui_padding_content": 5,         # Content padding (px)
             
-            # ========== CHAT-DISPLAY ==========
-            "ui_chat_bubble_corner_radius": 10,    # Bubble-Ecken-Radius
+            # ========== CHAT DISPLAY ==========
+            "ui_chat_bubble_corner_radius": 10,    # Bubble corner radius
             "ui_chat_bubble_padding_x": 15,        # Bubble horizontal padding
-            "ui_chat_bubble_padding_y": 10,        # Bubble vertikal padding
-            "ui_chat_spacing": 10,                 # Abstand zwischen Bubbles
-            "ui_chat_max_width_ratio": 0.8,        # Max Bubble-Breite (80% des Containers)
+            "ui_chat_bubble_padding_y": 10,        # Bubble vertical padding
+            "ui_chat_spacing": 10,                 # Spacing between bubbles
+            "ui_chat_max_width_ratio": 0.8,        # Max bubble width (80% of container)
             
-            # ========== INPUT-BEREICH ==========
-            "ui_input_height": 40,           # Höhe des Eingabefelds (px)
-            "ui_input_font_size": 12,        # Schriftgröße im Input
-            "ui_button_width": 100,          # Breite der Buttons (px)
-            "ui_button_height": 40,          # Höhe der Buttons (px)
+            # ========== INPUT AREA ==========
+            "ui_input_height": 40,           # Height of input field (px)
+            "ui_input_font_size": 12,        # Font size in input
+            "ui_button_width": 100,          # Width of buttons (px)
+            "ui_button_height": 40,          # Height of buttons (px)
             
-            # ========== SESSION-LISTE ==========
-            "ui_session_item_height": 60,    # Höhe eines Session-Items (px)
-            "ui_session_font_size": 11,      # Schriftgröße in Session-Liste
-            "ui_session_spacing": 5,         # Abstand zwischen Sessions
+            # ========== SESSION LIST ==========
+            "ui_session_item_height": 60,    # Height of session item (px)
+            "ui_session_font_size": 11,      # Font size in session list
+            "ui_session_spacing": 5,         # Spacing between sessions
             
-            # ========== MODEL-SELECTOR ==========
-            "ui_model_dropdown_height": 32,  # Höhe des Model-Dropdowns (px)
-            "ui_model_button_size": 35,      # Größe der Model-Buttons (px)
-            "ui_model_font_size": 11,        # Schriftgröße im Model-Selector
-            "ui_model_title_size": 12,       # Schriftgröße Model-Titel
-            "ui_model_label_size": 9,        # Schriftgröße Model-Labels
+            # ========== MODEL SELECTOR ==========
+            "ui_model_dropdown_height": 32,  # Height of model dropdown (px)
+            "ui_model_button_size": 35,      # Size of model buttons (px)
+            "ui_model_font_size": 11,        # Font size in model selector
+            "ui_model_title_size": 12,       # Font size model title
+            "ui_model_label_size": 9,        # Font size model labels
             
-            # ========== SESSION-BUTTONS ==========
-            "ui_session_button_width": 140,  # Breite Session-Buttons
-            "ui_session_button_height": 25,  # Höhe Session-Buttons
-            "ui_session_button_font": 9,     # Schriftgröße Session-Buttons
+            # ========== SESSION BUTTONS ==========
+            "ui_session_button_width": 140,  # Width session buttons
+            "ui_session_button_height": 25,  # Height session buttons
+            "ui_session_button_font": 9,     # Font size session buttons
             
-            # ========== BIAS-TEXTBOX ==========
-            "ui_bias_height": 60,            # Höhe BIAS-Eingabefeld
-            "ui_bias_font_size": 9,          # Schriftgröße BIAS
+            # ========== BIAS TEXTBOX ==========
+            "ui_bias_height": 60,            # Height BIAS input field
+            "ui_bias_font_size": 9,          # Font size BIAS
             
-            # ========== DEBUG-BUTTONS ==========
-            "ui_debug_button_height": 30,    # Höhe Debug-Buttons
-            "ui_debug_button_font": 9,       # Schriftgröße Debug-Buttons
+            # ========== DEBUG BUTTONS ==========
+            "ui_debug_button_height": 30,    # Height debug buttons
+            "ui_debug_button_font": 9,       # Font size debug buttons
             
             # ========== TABS ==========
-            "ui_tab_font_size": 13,          # Schriftgröße der Tab-Namen
-            "ui_tab_height": 40,             # Höhe der Tab-Leiste (px)
+            "ui_tab_font_size": 13,          # Font size of tab names
+            "ui_tab_height": 40,             # Height of tab bar (px)
             
-            # ========== CONFIG-TAB ==========
-            "ui_config_label_width": 200,    # Breite der Labels im Config
-            "ui_config_slider_width": 300,   # Breite der Sliders
-            "ui_config_entry_width": 200,    # Breite der Eingabefelder
+            # ========== CONFIG TAB ==========
+            "ui_config_label_width": 200,    # Width of labels in config
+            "ui_config_slider_width": 300,   # Width of sliders
+            "ui_config_entry_width": 200,    # Width of input fields
             
-            # ========== FARBEN & THEME ==========
-            "ui_bg_color": "#1a1a1a",        # Haupthintergrund
-            "ui_fg_color": "#2b2b2b",        # Vordergrund/Panels
-            "ui_accent_color": "#2B8A3E",    # Akzentfarbe (Buttons)
-            "ui_hover_color": "#37A24B",     # Hover-Farbe
-            "ui_text_color": "white",        # Standard-Textfarbe
-            "ui_border_color": "#3a3a3a",    # Border-Farbe
+            # ========== COLORS & THEME ==========
+            "ui_bg_color": "#1a1a1a",        # Main background
+            "ui_fg_color": "#2b2b2b",        # Foreground/panels
+            "ui_accent_color": "#2B8A3E",    # Accent color (buttons)
+            "ui_hover_color": "#37A24B",     # Hover color
+            "ui_text_color": "white",        # Standard text color
+            "ui_border_color": "#3a3a3a",    # Border color
             
             # ========== SCROLLBAR ==========
-            "ui_scrollbar_width": 12,        # Breite der Scrollbar (px)
-            "ui_scrollbar_corner_radius": 6, # Scrollbar Ecken-Radius
+            "ui_scrollbar_width": 12,        # Width of scrollbar (px)
+            "ui_scrollbar_corner_radius": 6, # Scrollbar corner radius
             
-            # ========== ALLGEMEINE OPTIONEN ==========
-            "show_system_messages": True,    # System-Nachrichten im Chat anzeigen
-            "auto_scroll_chat": True,        # Auto-Scroll zu neuen Nachrichten
-            "show_timestamps": True,         # Timestamps in Chat anzeigen
-            "compact_mode": False,           # Kompakte Darstellung
+            # ========== GENERAL OPTIONS ==========
+            "show_system_messages": True,    # Show system messages in chat
+            "auto_scroll_chat": True,        # Auto-scroll to new messages
+            "show_timestamps": True,         # Show timestamps in chat
+            "compact_mode": False,           # Compact display
         }
     
     def load_config(self):
-        """Lädt die Konfiguration aus der YAML-Datei oder erstellt Standard-Config"""
+        """Loads the configuration from the YAML file or creates default config"""
         try:
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r', encoding='utf-8') as file:
                     config = yaml.safe_load(file)
                     if config:
-                        # Fülle fehlende Werte mit Standardwerten auf
+                        # Fill missing values with default values
                         default_config = self.get_default_config()
                         for key, value in default_config.items():
                             if key not in config:
                                 config[key] = value
-                        print(f"✅ Konfiguration geladen aus {self.config_file}")
+                        print(f"✅ Configuration loaded from {self.config_file}")
                         return config
                     
-            # Fallback auf Standard-Konfiguration
+            # Fallback to default configuration
             default_config = self.get_default_config()
             self.save_config(default_config)
-            print(f"📝 Standard-Konfiguration erstellt in {self.config_file}")
+            print(f"📝 Default configuration created in {self.config_file}")
             return default_config
             
         except Exception as e:
-            print(f"❌ Fehler beim Laden der Konfiguration: {e}")
-            print("🔄 Verwende Standard-Konfiguration")
+            print(f"❌ Error loading configuration: {e}")
+            print("🔄 Using default configuration")
             return self.get_default_config()
     
     def save_config(self, config=None):
-        """Speichert die Konfiguration in die YAML-Datei"""
+        """Saves the configuration to the YAML file"""
         try:
             config_to_save = config or self.config
             
-            # Erstelle YAML mit Kommentaren
-            yaml_content = """# A1-Terminal Konfigurationsdatei
-# Diese Datei wird automatisch erstellt und aktualisiert
-# Alle Änderungen werden beim Anwenden in der GUI gespeichert
+            # Create YAML with comments
+            yaml_content = """# A1-Terminal Configuration File
+# This file is automatically created and updated
+# All changes are saved when applying in the GUI
 
 # ========================================
-# CHAT-BUBBLE FARBEN
+# CHAT BUBBLE COLORS
 # ========================================
 """
             
-            # Bubble-Farben Sektion
+            # Bubble colors section
             bubble_colors = {k: v for k, v in config_to_save.items() if 'color' in k and 'console' not in k}
-            yaml_content += "# Farben für Chat-Bubbles (Hex-Codes)\nbubble_colors:\n"
+            yaml_content += "# Colors for chat bubbles (Hex codes)\nbubble_colors:\n"
             
             for key, value in bubble_colors.items():
                 comment = ""
                 if "user" in key:
-                    comment = "  # Sie (Matrix-Style)"
+                    comment = "  # You"
                 elif "ai" in key:
-                    comment = "  # AI-Modell"
+                    comment = "  # AI Model"
                 elif "system" in key:
-                    comment = "  # System-Nachrichten"
+                    comment = "  # System Messages"
                 yaml_content += f"  {key}: \"{value}\"{comment}\n"
             
             
-            # Konsolen-Konfiguration
+            # Console configuration
             console_config = {k: v for k, v in config_to_save.items() if 'console' in k}
-            yaml_content += "# Terminal/Konsolen-Ausgabe Styling\nconsole:\n"
+            yaml_content += "# Terminal/Console Output Styling\nconsole:\n"
             
             for key, value in console_config.items():
                 yaml_content += f"  {key}: \"{value}\"\n"
                 
-            # Schreibe YAML-Datei
+            # Write YAML file
             with open(self.config_file, 'w', encoding='utf-8') as file:
-                # Schreibe manuelle YAML-Struktur für bessere Kommentare
+                # Write manual YAML structure for better comments
                 file.write(yaml_content)
                 
-                # Füge flache Struktur hinzu für einfache Kompatibilität
-                file.write("\n# Flache Struktur für Kompatibilität (wird automatisch generiert)\n")
+                # Add flat structure for easy compatibility
+                file.write("\n# Flat structure for compatibility (automatically generated)\n")
                 yaml.dump(config_to_save, file, default_flow_style=False, allow_unicode=True)
             
-            print(f"💾 Konfiguration gespeichert in {self.config_file}")
+            print(f"💾 Configuration saved in {self.config_file}")
             
         except Exception as e:
-            print(f"❌ Fehler beim Speichern der Konfiguration: {e}")
+            print(f"❌ Error saving configuration: {e}")
     
     def reset_config_to_defaults(self):
-        """Setzt die Konfiguration auf Standardwerte zurück und speichert sie"""
+        """Resets the configuration to default values and saves it"""
         self.config = self.get_default_config()
         self.save_config()
     
     
     def console_print(self, text, style="normal"):
-        """Einfache Konsolen-Ausgabe (ohne Styling)"""
+        """Simple console output (without styling)"""
         print(text)
     
     
@@ -269,33 +269,33 @@ class A1Terminal:
     # ============================================
     
     def setup_session_panel(self):
-        """Erstellt das Session Management Panel"""
+        """Creates the Session Management Panel"""
         
         # ============================================
-        # MODELL MANAGEMENT BEREICH (OBEN)
+        # MODEL MANAGEMENT AREA (TOP)
         # ============================================
         
-        # Modell Management Frame (ganz oben)
+        # Model Management Frame (at the top)
         model_frame = ctk.CTkFrame(self.session_panel)
         model_frame.pack(fill="x", padx=self.config.get("ui_padding_content", 5), 
                         pady=self.config.get("ui_padding_content", 5))
         
-        model_title = ctk.CTkLabel(model_frame, text="🤖 Modell Management", 
+        model_title = ctk.CTkLabel(model_frame, text="🤖 Model Management", 
                                   font=("Arial", self.config.get("ui_model_title_size", 12), "bold"))
         model_title.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), 
                         pady=(self.config.get("ui_padding_main", 10), self.config.get("ui_padding_content", 5)))
         
         # Ollama Status
-        self.status_label = ctk.CTkLabel(model_frame, text="Ollama Status: Wird geprüft...",
+        self.status_label = ctk.CTkLabel(model_frame, text="Ollama Status: Checking...",
                                         font=("Arial", self.config.get("ui_model_label_size", 9)))
         self.status_label.pack(anchor="w", padx=self.config.get("ui_padding_main", 10), pady=2)
         
-        # Installierte Modelle
+        # Installed Models
         installed_frame = ctk.CTkFrame(model_frame)
         installed_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
                             pady=self.config.get("ui_padding_content", 5))
         
-        self.installed_label = ctk.CTkLabel(installed_frame, text="📦 Installiert:",
+        self.installed_label = ctk.CTkLabel(installed_frame, text="📦 Installed:",
                                           font=("Arial", self.config.get("ui_model_label_size", 9), "bold"))
         self.installed_label.pack(anchor="w", padx=self.config.get("ui_padding_content", 5), pady=2)
         
@@ -328,7 +328,7 @@ class A1Terminal:
         # Info Panel Titel
         info_title = ctk.CTkLabel(
             self.model_info_panel,
-            text="ℹ️ Modell-Info",
+            text="ℹ️ Model-Info",
             font=("Arial", 10, "bold"),
             anchor="w"
         )
@@ -342,7 +342,7 @@ class A1Terminal:
             activate_scrollbars=False
         )
         self.model_info_text.pack(fill="both", expand=True, padx=8, pady=(0, 8))
-        self.model_info_text.insert("1.0", "Wählen Sie ein Modell aus,\num Details anzuzeigen.")
+        self.model_info_text.insert("1.0", "Select a model\nto view details.")
         self.model_info_text.configure(state="disabled")
         
         # Mausrad-Scrolling für model_dropdown aktivieren
@@ -354,7 +354,7 @@ class A1Terminal:
         # Delete Button 
         self.delete_btn = ctk.CTkButton(
             buttons_frame,
-            text="🗑️ Löschen",
+            text="🗑️ Delete",
             command=self.delete_selected_model,
             fg_color="red",
             hover_color="darkred",
@@ -366,14 +366,14 @@ class A1Terminal:
         # Refresh Button  
         self.refresh_btn = ctk.CTkButton(
             buttons_frame,
-            text="🔄 Aktualisieren",
+            text="🔄 Refresh",
             command=self.refresh_models,
             width=130,
             font=("Arial", 12, "bold")
         )
         self.refresh_btn.pack(side="right", padx=5, pady=2)
         
-        # Verfügbare Modelle zum Download
+        # Available Models for Download
         download_frame = ctk.CTkFrame(model_frame)
         download_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
                            pady=self.config.get("ui_padding_content", 5))
@@ -386,7 +386,7 @@ class A1Terminal:
         download_controls_frame = ctk.CTkFrame(download_frame)
         download_controls_frame.pack(fill="x", padx=self.config.get("ui_padding_content", 5), pady=2)
         
-        # Neues ModelInfoDropdown für verfügbare Modelle zum Download
+        # New ModelInfoDropdown for available models to download
         self.available_dropdown = ModelInfoDropdown(
             download_controls_frame,
             models_dict={},
@@ -407,17 +407,17 @@ class A1Terminal:
         # Manueller Download Button  
         self.manual_download_btn = ctk.CTkButton(
             download_controls_frame,
-            text="💾 Manuell",
+            text="💾 Manual",
             command=self.show_download_dialog,
             width=110,
             font=("Arial", 12, "bold")
         )
         self.manual_download_btn.pack(side="right", padx=5, pady=2)
         
-        # Ollama Models-Ordner öffnen Button
+        # Ollama Models-Folder open Button
         self.models_folder_btn = ctk.CTkButton(
             download_controls_frame,
-            text="📂 Ordner",
+            text="📂 Folder",
             command=self.open_ollama_models_folder,
             width=100,
             font=("Arial", 12, "bold"),
@@ -428,37 +428,37 @@ class A1Terminal:
         
         # Progress Bar für Downloads (initial versteckt)
         self.progress_frame = ctk.CTkFrame(model_frame)
-        self.progress_label = ctk.CTkLabel(self.progress_frame, text="Download läuft...",
+        self.progress_label = ctk.CTkLabel(self.progress_frame, text="Download running...",
                                          font=("Arial", self.config.get("ui_model_label_size", 9)))
         self.progress_label.pack(pady=2)
         self.progress_bar = ctk.CTkProgressBar(self.progress_frame)
         self.progress_bar.pack(fill="x", padx=self.config.get("ui_padding_main", 10), pady=2)
         
         # ============================================
-        # SESSION MANAGEMENT BEREICH (DARUNTER)
+        # SESSION MANAGEMENT AREA (DARUNTER)
         # ============================================
         
-    # (Session Panel Header entfernt)
+    # (Session Panel Header removed)
         
-        # Session Liste
+        # Session List
         sessions_frame = ctk.CTkFrame(self.session_panel)
         sessions_frame.pack(fill="both", expand=True, 
                            padx=self.config.get("ui_padding_content", 5), 
                            pady=self.config.get("ui_padding_content", 5))
         
-        # Header-Frame für Session Liste mit Button nebeneinander
+        # Header-Frame für Session List mit Button nebeneinander
         session_header_frame = ctk.CTkFrame(sessions_frame)
         session_header_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
                                  pady=(self.config.get("ui_padding_main", 10), self.config.get("ui_padding_content", 5)))
         
-        list_label = ctk.CTkLabel(session_header_frame, text="🗂️ Session Liste:", 
+        list_label = ctk.CTkLabel(session_header_frame, text="🗂️ Session List:", 
                                  font=("Arial", self.config.get("ui_model_title_size", 12), "bold"))
         list_label.pack(side="left", anchor="w", padx=(0, self.config.get("ui_padding_main", 10)))
         
-        # Neue Session Button - jetzt neben der Session Liste
+        # New Session Button - jetzt neben der Session List
         new_session_btn = ctk.CTkButton(
             session_header_frame, 
-            text="➕ Neue Session",
+            text="➕ New Session",
             command=self.create_new_session,
             width=self.config.get("ui_session_button_width", 140),
             height=self.config.get("ui_session_button_height", 25),
@@ -468,21 +468,21 @@ class A1Terminal:
         )
         new_session_btn.pack(side="right", padx=(self.config.get("ui_padding_main", 10), 0))
         
-        # Scrollbare Session-Liste - mehr Platz durch Entfernung des "Aktuelle Session" Bereichs
+        # Scrollbare Session-List - mehr Platz durch Entfernung des "Current Session" Bereichs
         self.session_listbox = ctk.CTkScrollableFrame(sessions_frame, 
                                                       height=self.config.get("ui_session_item_height", 60) * 2.5)
         self.session_listbox.pack(fill="both", expand=True, 
                                  padx=self.config.get("ui_padding_main", 10), 
                                  pady=self.config.get("ui_padding_content", 5))
         
-        # Session Actions unter der Session-Liste
+        # Session Actions unter der Session-List
         actions_frame = ctk.CTkFrame(sessions_frame)
         actions_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
                           pady=self.config.get("ui_padding_content", 5))
         
         delete_session_btn = ctk.CTkButton(
             actions_frame,
-            text="🗑️ Session löschen",
+            text="🗑️ Session delete",
             command=self.delete_current_session,
             height=35,
             font=("Arial", 12, "bold"),
@@ -493,7 +493,7 @@ class A1Terminal:
         
         cleanup_btn = ctk.CTkButton(
             actions_frame,
-            text="🗑️ Alle löschen",
+            text="🗑️ Alle delete",
             command=self.delete_all_sessions,
             height=35,
             font=("Arial", 12, "bold"),
@@ -502,7 +502,7 @@ class A1Terminal:
         )
         cleanup_btn.pack(side="left", fill="x", expand=True, padx=(2, 0))
         
-        # Debug-Buttons unter der Session-Liste
+        # Debug-Buttons unter der Session-List
         debug_frame = ctk.CTkFrame(sessions_frame)
         debug_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
                         pady=(self.config.get("ui_padding_content", 5), self.config.get("ui_padding_content", 5)))
@@ -520,7 +520,7 @@ class A1Terminal:
         
         folder_btn = ctk.CTkButton(
             debug_frame,
-            text="📁 Sessions-Ordner",
+            text="📁 Sessions-Folder",
             command=self.open_sessions_folder,
             height=35,
             font=("Arial", 12, "bold"),
@@ -547,15 +547,15 @@ class A1Terminal:
         )
         self.session_bias_entry.pack(fill="x", padx=self.config.get("ui_padding_main", 10), pady=2)
 
-        # Auto-Save für BIAS bei Textänderung
+        # Auto-save for BIAS on text change
         self.bias_auto_save_timer = None
         self.session_bias_entry.bind("<KeyRelease>", self.on_bias_text_changed)
         self.session_bias_entry.bind("<Button-1>", self.on_bias_text_changed)
 
-        # BIAS Info Label für aktuellen Status
+        # BIAS info label for current status
         self.bias_info_label = ctk.CTkLabel(
             bias_frame,
-            text="� BIAS nicht gesetzt (Auto-Save aktiv)",
+            text="� BIAS not set (Auto-Save active)",
             font=("Arial", self.config.get("ui_model_label_size", 9)),
             text_color="gray"
         )
@@ -563,38 +563,38 @@ class A1Terminal:
                                  pady=(2, self.config.get("ui_padding_main", 10)))
 
     def initialize_session_management(self):
-        """Initialisiert das Session Management System"""
-        # Session-Datenstrukturen (bereits im __init__ initialisiert)
+        """Initializes the session management system"""
+        # Session data structures (already initialized in __init__)
         # self.sessions = {}  # Alle Sessions: {session_id: session_data}
         # self.current_session_id = None
         # self.current_session_bias = ""
         
-        # Sessions-Ordner (bereits im __init__ erstellt)
+        # Sessions-Folder (bereits im __init__ created)
         # self.sessions_dir = os.path.join(os.getcwd(), "sessions")
         # if not os.path.exists(self.sessions_dir):
         #     os.makedirs(self.sessions_dir)
             
-        # Chat-Bubbles für Session Management
+        # Chat bubbles for session management
         self.chat_bubbles = []
         
-        # Lade bestehende Sessions
+        # Load existing sessions
         self.load_all_sessions()
         
-        # Zeige Session-Status an
+        # Show session status
         if not self.sessions:
-            self.console_print("📋 Keine bestehenden Sessions gefunden", "info")
-            self.console_print("💡 Klicken Sie auf '➕ Neue Session' um zu beginnen", "info")
+            self.console_print("📋 No existing sessions found", "info")
+            self.console_print("💡 Click on '➕ New Session' to begin", "info")
         else:
-            # Lade die neueste Session automatisch
+            # Load the latest session automatically
             latest_session = max(self.sessions.keys(), key=lambda x: self.sessions[x].get("created_at", ""))
             self.load_session(latest_session)
-            self.console_print(f"📂 Neueste Session automatisch geladen: {latest_session[:12]}...", "success")
+            self.console_print(f"📂 Latest session automatically loaded: {latest_session[:12]}...", "success")
         
-        # Debug: Session-Analyse
+        # Debug: Session analysis
         self.debug_session_analysis()
         
-        # Keine automatische Session-Erstellung - Nutzer muss explizit erstellen
-        # UI aktualisieren um "Keine Session" Zustand zu zeigen
+        # Keine automatische Session-Erstellung - Nutzer muss explizit create
+        # UI refresh um "No Session" show state
         self.update_session_list()
         self.update_current_session_display()
 
@@ -604,7 +604,7 @@ class A1Terminal:
         timestamp = datetime.now()
         session_id = timestamp.strftime("%Y%m%d_%H%M%S") + f"_{timestamp.microsecond // 1000:03d}"
         
-        # Prüfen ob Session-ID bereits existiert (Sicherheitscheck)
+        # Check ob Session-ID bereits existiert (Sicherheitscheck)
         counter = 1
         original_session_id = session_id
         while session_id in self.sessions:
@@ -626,10 +626,10 @@ class A1Terminal:
             "bias": "",
             "messages": [],
             "total_messages": 0,
-            "color": "#1f538d"  # Standard-Farbe: Blau
+            "color": "#1f538d"  # Standard-Farbe: Blue
         }
         
-        # Session speichern
+        # Session save
         self.sessions[session_id] = session_data
         self.current_session_id = session_id
         
@@ -640,35 +640,35 @@ class A1Terminal:
         self.current_session_bias = ""
         if hasattr(self, 'session_bias_entry'):
             self.session_bias_entry.delete("1.0", "end")
-        # BIAS-Info-Label aktualisieren
+        # BIAS-Info-Label refresh
         self.update_bias_info_label()
         
-        # UI aktualisieren
+        # UI refresh
         self.update_session_list()
         self.update_current_session_display()
         
-        # Stelle sicher, dass Modelle geladen sind
+        # Stelle sicher, dass Modelle loaded sind
         if hasattr(self, 'model_dropdown'):
-            # Wenn das Dropdown leer ist, lade Modelle neu
+            # Wenn das Dropdown leer ist, lade Modelle new
             if not self.model_dropdown.models_dict:
-                self.console_print("🔄 Lade Modelle für neue Session...", "info")
+                self.console_print("🔄 Loading models for new session...", "info")
                 self.refresh_models()
         
-        # Session persistent speichern mit Feedback
+        # Session persistent save mit Feedback
         self.save_session_with_feedback()
         
         # Force update der UI nach kurzer Verzögerung
         self.root.after(100, self.update_session_list)
 
-        self.console_print(f"✅ Neue Session erstellt: {session_id}", "success")
+        self.console_print(f"✅ New Session created: {session_id}", "success")
 
 
     def debug_session_analysis(self):
-        """Debug-Funktion zur Analyse von Session-Problemen"""
+        """Debug function for analyzing session problems"""
         if not self.sessions:
             return
             
-        self.console_print(f"🔍 Session-Analyse: {len(self.sessions)} Sessions gefunden", "info")
+        self.console_print(f"🔍 Session analysis: {len(self.sessions)} sessions found", "info")
         
         # Prüfe auf ähnliche Sessions (gleiche Erstellungszeiten)
         session_times = {}
@@ -685,14 +685,14 @@ class A1Terminal:
                 except:
                     pass
         
-        # Warne bei möglichen Duplikaten
+        # Warn about possible duplicates
         for time_key, session_ids in session_times.items():
             if len(session_ids) > 1:
-                self.console_print(f"⚠️ Mögliche Duplikate gefunden zur Zeit {time_key}:", "warning")
+                self.console_print(f"⚠️ Possible duplicates found at time {time_key}:", "warning")
                 for sid in session_ids:
                     session_data = self.sessions[sid]
                     msg_count = session_data.get("total_messages", 0)
-                    model = session_data.get("model", "Kein Model")
+                    model = session_data.get("model", "No model")
                     self.console_print(f"   🆔 {sid[-12:]} | 💬 {msg_count} Msg | 🤖 {model}", "info")
 
     def show_session_debug(self):
@@ -703,7 +703,7 @@ class A1Terminal:
             debug_text += "❌ Keine Sessions vorhanden\n"
         else:
             debug_text += f"📊 Anzahl Sessions: {len(self.sessions)}\n"
-            debug_text += f"🔄 Aktuelle Session: {self.current_session_id}\n\n"
+            debug_text += f"🔄 Current Session: {self.current_session_id}\n\n"
             
             # Session-Details
             for i, (session_id, session_data) in enumerate(sorted(self.sessions.items(), 
@@ -714,19 +714,19 @@ class A1Terminal:
                 debug_text += f"   📅 Erstellt: {session_data.get('created_at', 'Unbekannt')}\n"
                 debug_text += f"   ⏰ Geändert: {session_data.get('last_modified', 'Unbekannt')}\n"
                 debug_text += f"   🤖 Model: {session_data.get('model', 'Nicht gesetzt')}\n"
-                debug_text += f"   💬 Nachrichten: {session_data.get('total_messages', 0)}\n"
+                debug_text += f"   💬 Messages: {session_data.get('total_messages', 0)}\n"
                 debug_text += f"   📝 BIAS: {'Ja' if session_data.get('bias', '') else 'Nein'}\n"
                 
-                # Prüfe auf Session-Datei (beliebiger Name, aber mit passender ID)
+                # Check for session file (any name, but with matching ID)
                 matching_files = [f for f in os.listdir(self.sessions_dir) if f.endswith(f"_session_{session_id}.json")]
                 file_exists = len(matching_files) > 0
-                debug_text += f"   💾 Datei: {'✅ Vorhanden' if file_exists else '❌ Fehlt'}\n"
+                debug_text += f"   💾 File: {'✅ Present' if file_exists else '❌ Missing'}\n"
                 if file_exists:
                     try:
                         stat = os.stat(os.path.join(self.sessions_dir, matching_files[0]))
-                        debug_text += f"   📏 Dateigröße: {stat.st_size} Bytes\n"
+                        debug_text += f"   📏 File Size: {stat.st_size} Bytes\n"
                     except:
-                        debug_text += f"   📏 Dateigröße: Unlesbar\n"
+                        debug_text += f"   📏 File Size: Unreadable\n"
                 
                 debug_text += "\n"
         
@@ -737,7 +737,7 @@ class A1Terminal:
         debug_dialog.transient(self.root)
         debug_dialog.grab_set()
         
-        # Text-Widget für Debug-Ausgabe
+        # Text-Widget für Debug-Output
         debug_textbox = ctk.CTkTextbox(
             debug_dialog,
             font=("Consolas", 10),
@@ -750,35 +750,35 @@ class A1Terminal:
         # Close-Button
         close_btn = ctk.CTkButton(
             debug_dialog,
-            text="Schließen",
+            text="Close",
             command=debug_dialog.destroy,
             width=100
         )
         close_btn.pack(pady=10)
 
     def open_sessions_folder(self):
-        """Öffnet das Sessions-Verzeichnis im Windows Explorer"""
+        """Öffnet das Sessions-Directory im Windows Explorer"""
         try:
             import subprocess
             import os
             
-            # Verwende das gleiche Verzeichnis wie self.sessions_dir
+            # Verwende das gleiche Directory wie self.sessions_dir
             sessions_dir = self.sessions_dir
             
             if not os.path.exists(sessions_dir):
-                # Erstelle das Verzeichnis falls es nicht existiert
+                # Erstelle das Directory falls es nicht existiert
                 os.makedirs(sessions_dir, exist_ok=True)
-                self.console_print(f"📁 Sessions-Verzeichnis erstellt: {sessions_dir}", "success")
+                self.console_print(f"📁 Sessions directory created: {sessions_dir}", "success")
             
-            # Öffne Explorer mit dem Sessions-Verzeichnis
+            # Open Explorer with sessions directory
             subprocess.Popen(f'explorer "{sessions_dir}"', shell=True)
-            self.console_print(f"📂 Sessions-Ordner geöffnet: {sessions_dir}", "success")
+            self.console_print(f"📂 Sessions folder opened: {sessions_dir}", "success")
             
         except Exception as e:
-            self.console_print(f"❌ Fehler beim Öffnen des Sessions-Ordners: {e}", "error")
+            self.console_print(f"❌ Error opening sessions folder: {e}", "error")
 
     def open_ollama_models_folder(self):
-        """Öffnet das Ollama Models-Verzeichnis im Explorer/Finder"""
+        """Öffnet das Ollama Models-Directory im Explorer/Finder"""
         try:
             import subprocess
             import os
@@ -793,7 +793,7 @@ class A1Terminal:
             else:  # Linux
                 ollama_dir = os.path.join(os.path.expanduser('~'), '.ollama', 'models')
             
-            # Prüfe ob Verzeichnis existiert
+            # Prüfe ob Directory existiert
             if not os.path.exists(ollama_dir):
                 # Fallback: Versuche alternative Pfade
                 alt_paths = [
@@ -808,18 +808,18 @@ class A1Terminal:
                         break
                 else:
                     messagebox.showwarning(
-                        "Ordner nicht gefunden",
-                        f"❌ Ollama Models-Ordner nicht gefunden!\n\n"
+                        "Folder nicht gefunden",
+                        f"❌ Ollama Models-Folder nicht gefunden!\n\n"
                         f"Erwarteter Pfad:\n{ollama_dir}\n\n"
-                        f"Mögliche Gründe:\n"
-                        f"• Ollama ist nicht installiert\n"
+                        f"Mögliche Greende:\n"
+                        f"• Ollama ist nicht installed\n"
                         f"• Noch keine Modelle heruntergeladen\n"
                         f"• Ollama verwendet einen benutzerdefinierten Pfad\n\n"
-                        f"💡 Tipp: Laden Sie zuerst ein Modell herunter."
+                        f"💡 Tipp: Load You zuerst ein Model herunter."
                     )
                     return
             
-            # Öffne Explorer/Finder mit dem Models-Verzeichnis
+            # Öffne Explorer/Finder mit dem Models-Directory
             if sys.platform == 'win32':
                 subprocess.Popen(f'explorer "{ollama_dir}"', shell=True)
             elif sys.platform == 'darwin':
@@ -827,65 +827,65 @@ class A1Terminal:
             else:
                 subprocess.Popen(['xdg-open', ollama_dir])
             
-            self.console_print(f"🤖 Ollama Models-Ordner geöffnet: {ollama_dir}", "success")
+            self.console_print(f"🤖 Ollama models folder opened: {ollama_dir}", "success")
             
         except Exception as e:
-            self.console_print(f"❌ Fehler beim Öffnen des Ollama Models-Ordners: {e}", "error")
+            self.console_print(f"❌ Error opening Ollama models folder: {e}", "error")
 
     def clear_chat_history(self):
         """Löscht die Chat-Historie für einen frischen Kontext mit dem Model"""
         result = messagebox.askyesno(
-            "Chat-Historie löschen",
-            "⚠️ Chat-Historie löschen?\n\n"
+            "Chat-Historie delete",
+            "⚠️ Chat-Historie delete?\n\n"
             f"Dies löscht den Kontext für das AI-Model.\n"
-            f"Die Nachrichten bleiben in der Session sichtbar,\n"
+            f"Die Messages bleiben in der Session sichtbar,\n"
             f"aber das Model vergisst den bisherigen Verlauf.\n\n"
-            f"Möchten Sie fortfahren?"
+            f"Möchten You fortfahren?"
         )
         
         if result:
             old_count = len(self.chat_history)
             self.chat_history = []
             
-            self.console_print(f"🗑️ Chat-Historie gelöscht: {old_count} Nachrichten entfernt", "success")
-            self.add_to_chat("System", "🗑️ Chat-Historie für AI-Model gelöscht - Frischer Kontext ab sofort")
+            self.console_print(f"🗑️ Chat-Historie deleted: {old_count} Messages entfernt", "success")
+            self.add_to_chat("System", "🗑️ Chat-Historie für AI-Model deleted - Frischer Kontext ab sofort")
 
     def load_session(self, session_id):
         """Lädt eine bestehende Session"""
         if session_id not in self.sessions:
             return False
         
-        # Wenn die Session bereits geladen ist, nichts tun
+        # If the session is already loaded, do nothing
         if self.current_session_id == session_id:
-            self.console_print(f"ℹ️ Session bereits aktiv: {session_id}", "info")
+            self.console_print(f"ℹ️ Session already active: {session_id}", "info")
             return True
         
-        # WICHTIG: Flag setzen um zu verhindern, dass während des Ladevorgangs gespeichert wird
+        # IMPORTANT: Set flag to prevent saving during load process
         self._session_just_loaded = True
         
-        self.console_print(f"🔄 Wechsle zu Session: {session_id}", "info")
+        self.console_print(f"🔄 Switching to session: {session_id}", "info")
         
         # WICHTIG: Session-ID SOFORT wechseln BEVOR irgendwas anderes passiert!
         # Das verhindert, dass auto_save die alte Session mit neuen (leeren) Daten überschreibt
         old_session_id = self.current_session_id
         
-        # Alte Session speichern BEVOR Chat geleert wird und BEVOR Session-ID gewechselt wird
-        # Die Nachrichten müssen noch in chat_bubbles sein für das Speichern
-        # WICHTIG: Prüfe ob die alte Session noch existiert (könnte gelöscht worden sein)
+        # Alte Session save BEVOR Chat geleert is being und BEVOR Session-ID gewechselt is being
+        # Die Messages müssen noch in chat_bubbles sein für das Save
+        # WICHTIG: Prüfe ob die alte Session noch existiert (könnte deleted worden sein)
         if old_session_id and old_session_id != session_id and old_session_id in self.sessions:
-            # Speichern während chat_bubbles noch existieren und current_session_id noch die alte ist
+            # Save während chat_bubbles noch existieren und current_session_id noch die alte ist
             if self.save_current_session():
-                self.console_print(f"💾 Alte Session gespeichert: {old_session_id}", "success")
+                self.console_print(f"💾 Alte Session saved: {old_session_id}", "success")
             else:
-                self.console_print(f"⚠️ Warnung: Konnte alte Session nicht speichern", "warning")
+                self.console_print(f"⚠️ Warnung: Konnte alte Session nicht save", "warning")
         elif old_session_id and old_session_id != session_id and old_session_id not in self.sessions:
-            # Alte Session wurde bereits gelöscht - keine Warnung nötig
-            self.console_print(f"ℹ️ Alte Session {old_session_id} wurde bereits gelöscht", "info")
+            # Alte Session wurde bereits deleted - keine Warnung nötig
+            self.console_print(f"ℹ️ Alte Session {old_session_id} wurde bereits deleted", "info")
         
         # JETZT Session ID wechseln - KRITISCH: Muss VOR clear_chat passieren!
         self.current_session_id = session_id
         
-        # Session-Daten aus der Datei laden
+        # Session-Daten aus der File load
         session_name = self.sessions[session_id].get("name", "")
         safe_name = "_".join(session_name.split()).replace("/", "_").replace("\\", "_")
         session_file = os.path.join(self.sessions_dir, f"{safe_name}_session_{session_id}.json")
@@ -896,43 +896,48 @@ class A1Terminal:
                 # Aktualisiere auch das in-memory Dictionary
                 self.sessions[session_id] = session_data
         except Exception as e:
-            self.console_print(f"⚠️ Fehler beim Laden der Session-Datei: {e}", "warning")
+            self.console_print(f"⚠️ Error beim Load der Session-File: {e}", "warning")
             # Fallback auf in-memory Daten
             session_data = self.sessions[session_id]
         
         # JETZT ERST Chat-Anzeige leeren (NACH Session-ID Wechsel!)
-        # Dadurch wird auto_save, falls es aufgerufen wird, die RICHTIGE (neue) Session speichern
+        # Dadurch is being auto_save, falls es aufgerufen is being, die RICHTIGE (neue) Session save
         self.clear_chat_for_new_session()
         
         # Kleine Verzögerung für vollständiges Clearing
         self.root.update()
         
-        # Chat-Historie für LLM zurücksetzen und neu aufbauen
+        # Chat-Historie für LLM zurücksetzen und new aufbauen
         self.chat_history = []
         
         # Model setzen wenn vorhanden
         if session_data.get("model"):
             self.current_model = session_data["model"]
             if hasattr(self, 'model_dropdown'):
-                # Versuche das Modell direkt zu setzen
+                # Versuche das Model direkt zu setzen
                 self.model_dropdown.set_selected(self.current_model)
+                # Update model info panel
+                self.root.after(100, lambda: self.update_model_info_panel(self.current_model))
                 
-                # Falls das Modell noch nicht in models_dict ist (z.B. Modelle noch nicht geladen),
+                # Falls das Model noch nicht in models_dict ist (z.B. Modelle noch nicht loaded),
                 # versuche es nach kurzer Verzögerung erneut
                 def retry_set_model():
                     if self.current_model and hasattr(self, 'model_dropdown'):
-                        # Prüfe ob Modell jetzt in der Liste ist
+                        # Prüfe ob Model jetzt in der List ist
                         if self.current_model in self.model_dropdown.models_dict:
                             self.model_dropdown.set_selected(self.current_model)
+                            # Update model info panel after retry
+                            self.update_model_info_panel(self.current_model)
                         else:
                             # Wenn nicht, aktualisiere die Modelle und versuche es nochmal
                             self.refresh_models()
                             self.root.after(500, lambda: self.model_dropdown.set_selected(self.current_model))
+                            self.root.after(600, lambda: self.update_model_info_panel(self.current_model))
                 
                 # Retry nach 200ms
                 self.root.after(200, retry_set_model)
         
-        # BIAS setzen - WICHTIG: VOR dem Laden der Nachrichten
+        # BIAS setzen - WICHTIG: VOR dem Load der Messages
         self.current_session_bias = session_data.get("bias", "")
         if hasattr(self, 'session_bias_entry'):
             # Temporär Event-Handler deaktivieren um unnötige Saves zu vermeiden
@@ -948,27 +953,27 @@ class A1Terminal:
             self.session_bias_entry.bind("<KeyRelease>", self.on_bias_text_changed)
             self.session_bias_entry.bind("<Button-1>", self.on_bias_text_changed)
         
-        # BIAS-Info-Label aktualisieren
+        # BIAS-Info-Label refresh
         self.update_bias_info_label()
         
-        # Nachrichten laden und Chat-Historie für LLM aufbauen
+        # Messages load und Chat-Historie für LLM aufbauen
         message_count = 0
         for msg_data in session_data.get("messages", []):
-            # Visuelle Nachricht wiederherstellen
+            # Visuelle Message wiederherstellen
             self.restore_chat_message(msg_data)
             message_count += 1
             
-            # Chat-Historie für LLM aufbauen (nur User und AI-Nachrichten, keine System-Nachrichten)
+            # Chat-Historie für LLM aufbauen (nur User und AI-Messages, keine System-Messages)
             sender = msg_data.get("sender", "")
             message = msg_data.get("message", "")
             
-            if sender == "Sie":
+            if sender == "You":
                 self.chat_history.append({"role": "user", "content": message})
             elif sender.startswith("🤖") and not sender.startswith("System"):
                 # AI-Antwort hinzufügen
                 self.chat_history.append({"role": "assistant", "content": message})
         
-        # Layout nach dem Laden aller Nachrichten vollständig aktualisieren
+        # Layout nach dem Load aller Messages vollständig refresh
         if message_count > 0:
             # Mehrfaches Update für zuverlässiges Rendering
             self.chat_display_frame.update()
@@ -979,35 +984,35 @@ class A1Terminal:
                 self.chat_display_frame._parent_canvas.update()
                 self.chat_display_frame._parent_canvas.update_idletasks()
                 
-                # Scrollregion nur EINMAL aktualisieren - keine unnötigen mehrfachen Updates
+                # Scrollregion nur EINMAL refresh - keine unnötigen mehrfachen Updates
                 self.root.after(300, lambda: self._update_scroll_region())
         else:
-            # Auch für leere Sessions das Layout aktualisieren
+            # Auch für leere Sessions das Layout refresh
             if hasattr(self, 'chat_display_frame'):
                 self.chat_display_frame.update()
                 self.chat_display_frame.update_idletasks()
         
-        # Debug-Info über wiederhergestellte Chat-Historie
+        # Debug info about restored chat history
         if self.chat_history:
-            self.console_print(f"💬 Chat-Historie wiederhergestellt: {len(self.chat_history)} Nachrichten für LLM-Kontext", "success")
+            self.console_print(f"💬 Chat history restored: {len(self.chat_history)} messages for LLM context", "success")
         
-        self.console_print(f"✅ Session geladen: {session_id} mit {message_count} sichtbaren Nachrichten", "success")
+        self.console_print(f"✅ Session loaded: {session_id} with {message_count} visible messages", "success")
         
-        # UI aktualisieren
+        # UI refresh
         self.update_current_session_display()
-        self.update_session_list()  # Session-Liste auch aktualisieren
+        self.update_session_list()  # Session-List auch refresh
         
-        # Zur letzten Nachricht scrollen - nur EINMAL mit Verzögerung
+        # Zur letzten Message scrollen - nur EINMAL mit Verzögerung
         if message_count > 0:
             self.root.after(300, self.scroll_to_last_message)
         
-        # WICHTIG: Flag zurücksetzen NACH allen Operationen die speichern könnten
+        # WICHTIG: Flag zurücksetzen NACH allen Operationen die save könnten
         self._session_just_loaded = False
         
         return True
     
     def _update_scroll_region(self):
-        """Hilfsmethode zum Aktualisieren der Scroll-Region"""
+        """Hilfsmethode zum Refresh der Scroll-Region"""
         if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
             try:
                 self.chat_display_frame._parent_canvas.configure(
@@ -1021,9 +1026,9 @@ class A1Terminal:
         if not self.current_session_id:
             return False
         
-        # Prüfe ob Session noch existiert (könnte gelöscht worden sein)
+        # Check if session still exists (could have been deleted)
         if self.current_session_id not in self.sessions:
-            self.console_print(f"⚠️ Session {self.current_session_id} existiert nicht mehr - Speichern übersprungen", "warning")
+            self.console_print(f"⚠️ Session {self.current_session_id} no longer exists - save skipped", "warning")
             return False
             
         session_data = self.sessions[self.current_session_id]
@@ -1034,7 +1039,7 @@ class A1Terminal:
         session_data["bias"] = self.current_session_bias
         session_data["total_messages"] = self.count_chat_messages()
         
-        # Chat-Nachrichten sammeln
+        # Chat-Messages sammeln
         messages = []
         for bubble in self.chat_bubbles:
             msg_data = {
@@ -1046,7 +1051,7 @@ class A1Terminal:
         
         session_data["messages"] = messages
         
-        # Session-Datei speichern: Name am Anfang, dann _session_<SessionID>.json
+        # Session-File save: Name am Anfang, dann _session_<SessionID>.json
         session_name = self.sessions[self.current_session_id].get("name", "")
         safe_name = "_".join(session_name.split()).replace("/", "_").replace("\\", "_")
         session_file = os.path.join(self.sessions_dir, f"{safe_name}_session_{self.current_session_id}.json")
@@ -1064,39 +1069,39 @@ class A1Terminal:
                 json.dump(session_data, f, ensure_ascii=False, indent=2)
             return True
         except Exception as e:
-            self.console_print(f"❌ Fehler beim Speichern der Session: {e}", "error")
+            self.console_print(f"❌ Error beim Save der Session: {e}", "error")
             return False
 
     def auto_save_session(self):
-        """Automatisches Speichern mit Debounce-Logik"""
+        """Automatisches Save mit Debounce-Logik"""
         # Lösche vorherigen Timer falls vorhanden
         if self.auto_save_timer:
             self.root.after_cancel(self.auto_save_timer)
         
-        # Starte neuen Timer für verzögertes Speichern (200ms)
+        # Starte neuen Timer für verzögertes Save (200ms)
         self.auto_save_timer = self.root.after(200, self.perform_auto_save)
     
     def perform_auto_save(self):
-        """Führt das tatsächliche automatische Speichern durch"""
+        """Führt das tatsächliche automatische Save durch"""
         try:
             if self.save_current_session():
-                # Nur in Debug-Modus anzeigen, um Konsole nicht zu überlasten
-                # self.console_print(f"💾 Auto-Save: Session gespeichert", "info")
+                # Nur in Debug-Modus show, um Konsole nicht zu überlasten
+                # self.console_print(f"💾 Auto-Save: Session saved", "info")
                 pass
         except Exception as e:
-            self.console_print(f"❌ Auto-Save Fehler: {e}", "error")
+            self.console_print(f"❌ Auto-Save Error: {e}", "error")
         finally:
             self.auto_save_timer = None
 
     def save_session_with_feedback(self):
-        """Manuelles Speichern mit Konsolen-Feedback"""
+        """Manuelles Save mit Konsolen-Feedback"""
         if self.save_current_session():
-            self.console_print(f"💾 Session manuell gespeichert: {self.current_session_id}", "success")
+            self.console_print(f"💾 Session manual saved: {self.current_session_id}", "success")
             return True
         return False
 
     def load_all_sessions(self):
-        """Lädt alle Sessions aus dem Sessions-Ordner"""
+        """Lädt alle Sessions aus dem Sessions-Folder"""
         try:
             session_files = [f for f in os.listdir(self.sessions_dir)
                              if f.endswith(".json")]
@@ -1121,16 +1126,16 @@ class A1Terminal:
                                     session_data["name"] = f"Session {session_id[-8:]}"
                             # Füge Standard-Farbe hinzu wenn nicht vorhanden (Migration bestehender Sessions) 
                             if "color" not in session_data:
-                                session_data["color"] = "#1f538d"  # Standard-Blau
+                                session_data["color"] = "#1f538d"  # Standard-Blue
                             self.sessions[session_id] = session_data
                 except Exception as e:
-                    self.console_print(f"❌ Fehler beim Laden der Session {session_file}: {e}", "warning")
+                    self.console_print(f"❌ Error beim Load der Session {session_file}: {e}", "warning")
             
             self.update_session_list()
-            self.console_print(f"📂 {len(self.sessions)} Sessions geladen", "info")
+            self.console_print(f"📂 {len(self.sessions)} Sessions loaded", "info")
             
         except Exception as e:
-            self.console_print(f"❌ Fehler beim Laden der Sessions: {e}", "error")
+            self.console_print(f"❌ Error beim Load der Sessions: {e}", "error")
 
     def calculate_session_word_count(self, session_data):
         """Berechnet die Gesamtanzahl der Wörter in einer Session"""
@@ -1154,7 +1159,7 @@ class A1Terminal:
         return total_words
 
     def update_session_list(self):
-        """Aktualisiert die Session-Liste in der UI"""
+        """Aktualisiert die Session-List in der UI"""
         if not hasattr(self, 'session_listbox'):
             return
             
@@ -1242,9 +1247,9 @@ class A1Terminal:
         session_data = self.sessions[session_id]
         current_name = session_data.get("name", f"Session {session_id[-8:]}")
         
-        # Dialog-Fenster erstellen
+        # Dialog-Fenster create
         dialog = ctk.CTkToplevel(self.root)
-        dialog.title("Session umbenennen")
+        dialog.title("Rename session")
         dialog.geometry("400x200")
         dialog.transient(self.root)
         dialog.grab_set()
@@ -1255,8 +1260,8 @@ class A1Terminal:
         y = (dialog.winfo_screenheight() // 2) - (200 // 2)
         dialog.geometry(f"400x200+{x}+{y}")
         
-        # Dialog-Inhalt
-        title_label = ctk.CTkLabel(dialog, text="Session umbenennen", 
+        # Dialog content
+        title_label = ctk.CTkLabel(dialog, text="Rename session", 
                                   font=("Arial", 16, "bold"))
         title_label.pack(pady=(20, 10))
         
@@ -1264,8 +1269,8 @@ class A1Terminal:
                                  font=("Arial", 10))
         info_label.pack(pady=5)
         
-        # Name-Input
-        name_label = ctk.CTkLabel(dialog, text="Neuer Name:", 
+        # Name input
+        name_label = ctk.CTkLabel(dialog, text="New name:", 
                                  font=("Arial", 12, "bold"))
         name_label.pack(pady=(10, 5))
         
@@ -1282,7 +1287,7 @@ class A1Terminal:
         def save_name():
             new_name = name_entry.get().strip()
             if new_name and new_name != current_name:
-                # Name in Session-Daten aktualisieren
+                # Name in Session-Daten refresh
                 self.sessions[session_id]["name"] = new_name
                 self.sessions[session_id]["last_modified"] = datetime.now().isoformat()
                 # Find old file
@@ -1299,34 +1304,34 @@ class A1Terminal:
                     if old_path and os.path.abspath(old_path) != os.path.abspath(new_path):
                         os.remove(old_path)
                 except Exception as e:
-                    self.console_print(f"❌ Fehler beim Umbenennen/Speichern der Session-Datei: {e}", "warning")
-                # UI aktualisieren
+                    self.console_print(f"❌ Error beim Umbenennen/Save der Session-File: {e}", "warning")
+                # UI refresh
                 self.update_session_list()
                 self.update_current_session_display()
-                self.console_print(f"✅ Session umbenannt: '{new_name}'", "success")
+                self.console_print(f"✅ Session renamed: '{new_name}'", "success")
                 dialog.destroy()
             elif not new_name:
-                # Fehlermeldung für leeren Namen
-                error_label = ctk.CTkLabel(dialog, text="⚠️ Name darf nicht leer sein!", 
+                # Error message for empty name
+                error_label = ctk.CTkLabel(dialog, text="⚠️ Name must not be empty!", 
                                          text_color="red", font=("Arial", 10, "bold"))
                 error_label.pack(pady=5)
-                dialog.after(2000, error_label.destroy)  # Nach 2 Sekunden entfernen
+                dialog.after(2000, error_label.destroy)  # Remove after 2 seconds
             else:
-                dialog.destroy()  # Kein Änderung
+                dialog.destroy()  # No change
         
         def cancel():
             dialog.destroy()
         
-        # Enter-Taste für Speichern binden
+        # Enter-Taste für Save binden
         dialog.bind('<Return>', lambda e: save_name())
         dialog.bind('<Escape>', lambda e: cancel())
         
-        save_btn = ctk.CTkButton(button_frame, text="💾 Speichern", 
+        save_btn = ctk.CTkButton(button_frame, text="💾 Save", 
                                 command=save_name, fg_color="#2B8A3E", 
                                 hover_color="#37A24B")
         save_btn.pack(side="left", padx=5)
         
-        cancel_btn = ctk.CTkButton(button_frame, text="❌ Abbrechen", 
+        cancel_btn = ctk.CTkButton(button_frame, text="❌ Cancel", 
                                   command=cancel, fg_color="#C92A2A", 
                                   hover_color="#E03131")
         cancel_btn.pack(side="left", padx=5)
@@ -1342,7 +1347,7 @@ class A1Terminal:
         
         # Color-Picker Dialog
         color_dialog = ctk.CTkToplevel(self.root)
-        color_dialog.title(f"Farbe wählen: {session_name}")
+        color_dialog.title(f"Farbe select: {session_name}")
         color_dialog.geometry("700x600")  # Größer gemacht
         color_dialog.transient(self.root)
         color_dialog.grab_set()
@@ -1354,8 +1359,8 @@ class A1Terminal:
         y = (color_dialog.winfo_screenheight() // 2) - (600 // 2)
         color_dialog.geometry(f"700x600+{x}+{y}")
         
-        # Dialog-Inhalt direkt auf dem Dialog (ohne zusätzliche Frames)
-        title_label = ctk.CTkLabel(color_dialog, text=f"Farbe für '{session_name}' wählen", 
+        # Dialog content directly on dialog (without additional frames)
+        title_label = ctk.CTkLabel(color_dialog, text=f"Color for '{session_name}' select", 
                                   font=("Arial", 16, "bold"))
         title_label.pack(pady=(20, 5))
         
@@ -1363,33 +1368,33 @@ class A1Terminal:
                                  font=("Arial", 10))
         info_label.pack(pady=(0, 15))
         
-        # Aktuelle Farbe Variable
+        # Current color variable
         selected_color = tk.StringVar(value=current_color)
         
-        # Horizontal Layout für Farbkreis und Optionen
-        content_frame = tk.Frame(color_dialog, bg='#212121')  # Standard Frame statt CTkFrame
+        # Horizontal layout for color wheel and options
+        content_frame = tk.Frame(color_dialog, bg='#212121')  # Standard Frame instead of CTkFrame
         content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
         
-        # Linke Seite: Farbkreis
+        # Left side: Color wheel
         wheel_frame = tk.Frame(content_frame, bg='#212121')  # Standard Frame
         wheel_frame.pack(side="left", padx=(0, 20))
         
-        wheel_label = ctk.CTkLabel(wheel_frame, text="🎨 Farbkreis", font=("Arial", 14, "bold"))
+        wheel_label = ctk.CTkLabel(wheel_frame, text="🎨 Color Wheel", font=("Arial", 14, "bold"))
         wheel_label.pack(pady=(20, 10))
         
-        # Farbkreis Widget
-        color_wheel = ColorWheel(wheel_frame, size=220, initial_color=current_color)  # Größer
+        # Color wheel widget
+        color_wheel = ColorWheel(wheel_frame, size=220, initial_color=current_color)  # Larger
         color_wheel.pack(pady=10)
         
-        # Rechte Seite: Vorschau und vordefinierte Farben
+        # Right side: Preview and predefined colors
         options_frame = tk.Frame(content_frame, bg='#212121')  # Standard Frame
         options_frame.pack(side="right", fill="both", expand=True)
         
-        # Farbvorschau
-        preview_label = ctk.CTkLabel(options_frame, text="Vorschau:", font=("Arial", 14, "bold"))
+        # Color preview
+        preview_label = ctk.CTkLabel(options_frame, text="Preview:", font=("Arial", 14, "bold"))
         preview_label.pack(pady=(20, 10))
         
-        # Preview Button (zeigt die aktuell gewählte Farbe)
+        # Preview button (shows currently selected color)
         def update_preview():
             color = selected_color.get()
             preview_btn.configure(fg_color=color)
@@ -1400,38 +1405,38 @@ class A1Terminal:
             text=f"📝 {session_name}",
             fg_color=current_color,
             width=200,
-            height=60,  # Höher für bessere Sichtbarkeit
+            height=60,  # Higher for better visibility
             font=("Arial", 14, "bold"),
-            state="disabled"  # Nur zur Anzeige
+            state="disabled"  # Display only
         )
         preview_btn.pack(pady=(10, 10))
         
-        # Hex-Wert Anzeige
+        # Hex value display
         hex_label = ctk.CTkLabel(options_frame, text=f"Hex: {current_color}", 
                                 font=("Arial", 12))
         hex_label.pack(pady=(0, 20))
         
-        # Callback für Farbkreis
+        # Callback for color wheel
         def on_wheel_color_change(color):
             selected_color.set(color)
             update_preview()
             
         color_wheel.set_color_callback(on_wheel_color_change)
         
-        # Farbauswahl - Vordefinierte Farben (größer und übersichtlicher)
-        colors_label = ctk.CTkLabel(options_frame, text="Vordefinierte Farben:", font=("Arial", 13, "bold"))
+        # Color selection - Predefined colors (larger and clearer)
+        colors_label = ctk.CTkLabel(options_frame, text="Predefined colors:", font=("Arial", 13, "bold"))
         colors_label.pack(pady=(10, 15))
         
-        # Beliebte Farben für Sessions
+        # Popular colors for sessions
         predefined_colors = [
-            ("#1f538d", "Blau"),
-            ("#2B8A3E", "Grün"),
-            ("#C92A2A", "Rot"), 
+            ("#1f538d", "Blue"),
+            ("#2B8A3E", "Green"),
+            ("#C92A2A", "Red"), 
             ("#E67700", "Orange"),
-            ("#6741D9", "Lila"),
+            ("#6741D9", "Purple"),
             ("#C2185B", "Pink"),
-            ("#00695C", "Türkis"),
-            ("#4A4A4A", "Grau")
+            ("#00695C", "Turquoise"),
+            ("#4A4A4A", "Gray")
         ]
         
         # Größeres Raster für Farbbuttons (2x4)
@@ -1457,7 +1462,7 @@ class A1Terminal:
             
             color_btn = ctk.CTkButton(
                 color_grid,
-                text=name,  # Text anzeigen für bessere Übersicht
+                text=name,  # Text show für bessere Übersicht
                 command=make_color_button_command(color),
                 fg_color=color,
                 hover_color=color,
@@ -1476,17 +1481,17 @@ class A1Terminal:
         def save_color():
             new_color = selected_color.get()
             if new_color and new_color != current_color:
-                # Farbe in Session-Daten aktualisieren
+                # Farbe in Session-Daten refresh
                 self.sessions[session_id]["color"] = new_color
                 self.sessions[session_id]["last_modified"] = datetime.now().isoformat()
-                # Session speichern
+                # Session save
                 self.save_session_with_feedback()
-                # UI aktualisieren
+                # UI refresh
                 self.update_session_list()
-                # Wenn die aktuelle Session geändert wurde, Anzeige sofort aktualisieren
+                # Wenn die aktuelle Session changed wurde, Anzeige sofort refresh
                 if hasattr(self, 'current_session_id') and self.current_session_id == session_id:
                     self.update_current_session_display()
-                self.console_print(f"🎨 Session-Farbe geändert: {new_color}", "success")
+                self.console_print(f"🎨 Session-Farbe changed: {new_color}", "success")
             color_dialog.destroy()
         
         def cancel_color():
@@ -1496,21 +1501,21 @@ class A1Terminal:
         color_dialog.bind('<Return>', lambda e: save_color())
         color_dialog.bind('<Escape>', lambda e: cancel_color())
         
-        save_btn = ctk.CTkButton(button_frame, text="💾 Speichern", 
+        save_btn = ctk.CTkButton(button_frame, text="💾 Save", 
                                 command=save_color, fg_color="#2B8A3E", 
                                 hover_color="#37A24B",
                                 width=120, height=45,  # Größer
                                 font=("Arial", 14, "bold"))
         save_btn.pack(side="left", padx=20, pady=10)
         
-        cancel_btn = ctk.CTkButton(button_frame, text="❌ Abbrechen", 
+        cancel_btn = ctk.CTkButton(button_frame, text="❌ Cancel", 
                                   command=cancel_color, fg_color="#C92A2A", 
                                   hover_color="#E03131",
                                   width=120, height=45,  # Größer
                                   font=("Arial", 14, "bold"))
         cancel_btn.pack(side="left", padx=20, pady=10)
         
-        # Initiale Vorschau aktualisieren
+        # Initiale Vorschau refresh
         update_preview()
     
     def show_session_settings(self, session_id):
@@ -1522,7 +1527,7 @@ class A1Terminal:
         current_name = session_data.get("name", f"Session {session_id[-8:]}")
         current_color = session_data.get("color", "#1f538d")
         
-        # Dialog-Fenster erstellen
+        # Dialog-Fenster create
         settings_dialog = ctk.CTkToplevel(self.root)
         settings_dialog.title("Session-Einstellungen")
         settings_dialog.geometry("750x700")
@@ -1537,7 +1542,7 @@ class A1Terminal:
         settings_dialog.geometry(f"750x700+{x}+{y}")
         
         # Title
-        title_label = ctk.CTkLabel(settings_dialog, text=f"⚙️ Einstellungen: {current_name}", 
+        title_label = ctk.CTkLabel(settings_dialog, text=f"⚙️ Settings: {current_name}", 
                                   font=("Arial", 18, "bold"))
         title_label.pack(pady=(20, 10))
         
@@ -1549,7 +1554,7 @@ class A1Terminal:
         name_section = ctk.CTkFrame(settings_dialog)
         name_section.pack(fill="x", padx=30, pady=(0, 20))
         
-        name_title = ctk.CTkLabel(name_section, text="✏️ Session-Name", 
+        name_title = ctk.CTkLabel(name_section, text="✏️ Session Name", 
                                  font=("Arial", 14, "bold"))
         name_title.pack(anchor="w", padx=15, pady=(15, 5))
         
@@ -1563,7 +1568,7 @@ class A1Terminal:
         color_section = ctk.CTkFrame(settings_dialog)
         color_section.pack(fill="both", expand=True, padx=30, pady=(0, 20))
         
-        color_title = ctk.CTkLabel(color_section, text="🎨 Session-Farbe", 
+        color_title = ctk.CTkLabel(color_section, text="🎨 Session Color", 
                                   font=("Arial", 14, "bold"))
         color_title.pack(anchor="w", padx=15, pady=(15, 10))
         
@@ -1586,7 +1591,7 @@ class A1Terminal:
         options_frame.pack(side="right", fill="both", expand=True)
         
         # Vorschau
-        preview_label = ctk.CTkLabel(options_frame, text="Vorschau:", font=("Arial", 12, "bold"))
+        preview_label = ctk.CTkLabel(options_frame, text="Preview:", font=("Arial", 12, "bold"))
         preview_label.pack(pady=(5, 5))
         
         preview_box = ctk.CTkFrame(options_frame, width=180, height=60, fg_color=current_color)
@@ -1615,15 +1620,15 @@ class A1Terminal:
         color_wheel.set_initial_position()
         
         # Vordefinierte Farben
-        colors_label = ctk.CTkLabel(options_frame, text="Schnellauswahl:", font=("Arial", 11, "bold"))
+        colors_label = ctk.CTkLabel(options_frame, text="Quick selection:", font=("Arial", 11, "bold"))
         colors_label.pack(pady=(0, 5))
         
         color_grid = tk.Frame(options_frame, bg='#2B2B2B')
         color_grid.pack(pady=5)
         
         predefined_colors = [
-            ("#1f538d", "Blau"), ("#2B8A3E", "Grün"), ("#C92A2A", "Rot"), ("#F59F00", "Orange"),
-            ("#7C2D12", "Braun"), ("#5F3DC4", "Lila"), ("#0C8599", "Cyan"), ("#4A4A4A", "Grau")
+            ("#1f538d", "Blue"), ("#2B8A3E", "Green"), ("#C92A2A", "Red"), ("#F59F00", "Orange"),
+            ("#7C2D12", "Braun"), ("#5F3DC4", "Purple"), ("#0C8599", "Cyan"), ("#4A4A4A", "Gray")
         ]
         
         for i, (color, name) in enumerate(predefined_colors):
@@ -1654,12 +1659,12 @@ class A1Terminal:
             
             changed = False
             
-            # Name ändern
+            # Name change
             if new_name and new_name != current_name:
                 self.sessions[session_id]["name"] = new_name
                 changed = True
                 
-                # Datei umbenennen
+                # File umbenennen
                 old_files = [f for f in os.listdir(self.sessions_dir) if f.endswith(f"_session_{session_id}.json")]
                 old_path = os.path.join(self.sessions_dir, old_files[0]) if old_files else None
                 safe_name = "_".join(new_name.split()).replace("/", "_").replace("\\", "_")
@@ -1671,21 +1676,21 @@ class A1Terminal:
                     if old_path and os.path.abspath(old_path) != os.path.abspath(new_path):
                         os.remove(old_path)
                 except Exception as e:
-                    self.console_print(f"❌ Fehler beim Speichern: {e}", "warning")
+                    self.console_print(f"❌ Error beim Save: {e}", "warning")
             
-            # Farbe ändern
+            # Farbe change
             if new_color and new_color != current_color:
                 self.sessions[session_id]["color"] = new_color
                 changed = True
             
-            # Speichern und UI aktualisieren
+            # Save und UI refresh
             if changed:
                 self.sessions[session_id]["last_modified"] = datetime.now().isoformat()
                 self.save_session_with_feedback()
                 self.update_session_list()
                 if hasattr(self, 'current_session_id') and self.current_session_id == session_id:
                     self.update_current_session_display()
-                self.console_print("✅ Session-Einstellungen gespeichert", "success")
+                self.console_print("✅ Session-Einstellungen saved", "success")
             
             settings_dialog.destroy()
         
@@ -1696,7 +1701,7 @@ class A1Terminal:
         settings_dialog.bind('<Return>', lambda e: save_settings())
         settings_dialog.bind('<Escape>', lambda e: cancel())
         
-        save_btn = ctk.CTkButton(button_frame, text="💾 Speichern", 
+        save_btn = ctk.CTkButton(button_frame, text="💾 Save", 
                                 command=save_settings, 
                                 fg_color="#2B8A3E", 
                                 hover_color="#37A24B",
@@ -1704,7 +1709,7 @@ class A1Terminal:
                                 font=("Arial", 14, "bold"))
         save_btn.pack(side="left", expand=True, padx=(0, 10))
         
-        cancel_btn = ctk.CTkButton(button_frame, text="❌ Abbrechen", 
+        cancel_btn = ctk.CTkButton(button_frame, text="❌ Cancel", 
                                   command=cancel, 
                                   fg_color="#C92A2A", 
                                   hover_color="#E03131",
@@ -1720,7 +1725,7 @@ class A1Terminal:
         
         Args:
             history (list): Original Chat-History
-            max_entries (int): Maximale Anzahl der letzten Nachrichten (None = aus Config)
+            max_entries (int): Maximale Anzahl der letzten Messages (None = aus Config)
             
         Returns:
             list: Komprimierte Chat-History oder Original falls deaktiviert
@@ -1736,24 +1741,24 @@ class A1Terminal:
         if max_entries is None:
             max_entries = self.config.get("performance", {}).get("max_history_entries", 20)
         
-        # Behalte nur die letzten max_entries Nachrichten
+        # Behalte nur die letzten max_entries Messages
         recent_history = history[-max_entries:] if len(history) > max_entries else history
         
         compressed = []
         for msg in recent_history:
             if msg.get("role") == "system":
-                # System-Nachrichten (BIAS) behalten - minimal kürzen
+                # System-Messages (BIAS) behalten - minimal kürzen
                 content = msg.get("content", "").strip()
                 compressed.append({"role": "system", "content": content})
                 
             elif msg.get("role") == "user":
-                # User-Nachrichten: Whitespace normalisieren
+                # User-Messages: Whitespace normalisieren
                 content = msg.get("content", "")
                 content = " ".join(content.split())  # Normalisiere Whitespace
                 compressed.append({"role": "user", "content": content})
                 
             elif msg.get("role") == "assistant":
-                # AI-Nachrichten: Stärker komprimieren
+                # AI-Messages: Stärker komprimieren
                 content = msg.get("content", "")
                 # Entferne Emoji und überflüssige Formatierung
                 content = content.replace("💭", "").replace("🤖", "").replace("✨", "")
@@ -1800,7 +1805,7 @@ class A1Terminal:
                 with open("sessions.json", "w", encoding="utf-8") as f:
                     json.dump(self.sessions, f, indent=2, ensure_ascii=False)
             except Exception as e:
-                # Stille Fehlerbehandlung - nur bei kritischen Fehlern anzeigen
+                # Stille Fehlerbehandlung - nur bei kritischen Fehlern show
                 pass
     
     def update_current_session_display(self):
@@ -1813,10 +1818,10 @@ class A1Terminal:
             # Holen der Session-Farbe
             session_color = session_data.get("color", "#4A4A4A")
             
-            # Umrandung des Chat-Verlaufs mit Session-Farbe aktualisieren
+            # Umrandung des Chat-Verlaufs mit Session-Farbe refresh
             self.chat_display_frame.configure(border_color=session_color)
         else:
-            # Keine aktive Session - Standard-Grau verwenden
+            # Keine aktive Session - Standard-Gray verwenden
             self.chat_display_frame.configure(border_color="#4A4A4A")
 
     def save_session_bias(self):
@@ -1830,16 +1835,16 @@ class A1Terminal:
         if self.current_session_id and self.current_session_id in self.sessions:
             self.sessions[self.current_session_id]["bias"] = bias_text
             
-        self.console_print("💾 Session-BIAS gespeichert", "success")
+        self.console_print("💾 Session-BIAS saved", "success")
         self.update_bias_info_label()
     
     def on_bias_text_changed(self, event=None):
-        """Wird aufgerufen, wenn sich der BIAS-Text ändert (Auto-Save mit Verzögerung)"""
-        # Vorherigen Timer stoppen
+        """Is being aufgerufen, wenn sich der BIAS-Text ändert (Auto-Save mit Verzögerung)"""
+        # Vorherigen Timer stop
         if hasattr(self, 'bias_auto_save_timer') and self.bias_auto_save_timer:
             self.root.after_cancel(self.bias_auto_save_timer)
         
-        # Neuen Timer für verzögerte Speicherung starten (1 Sekunde nach letzter Eingabe)
+        # Neuen Timer für verzögerte Speicherung start (1 Sekunde nach letzter Input)
         self.bias_auto_save_timer = self.root.after(1000, self.auto_save_bias)
     
     def auto_save_bias(self):
@@ -1847,26 +1852,26 @@ class A1Terminal:
         if not hasattr(self, 'session_bias_entry'):
             return
         
-        # WICHTIG: Nicht speichern während eine Session geladen wird
+        # WICHTIG: Nicht save während eine Session loaded is being
         if getattr(self, '_session_just_loaded', False):
             return
             
         bias_text = self.session_bias_entry.get("1.0", "end-1c").strip()
         old_bias = self.current_session_bias
         
-        # Nur speichern wenn sich der Text geändert hat
+        # Nur save wenn sich der Text changed hat
         if bias_text != old_bias:
             self.current_session_bias = bias_text
             
             if self.current_session_id and self.current_session_id in self.sessions:
                 self.sessions[self.current_session_id]["bias"] = bias_text
-                # Session automatisch speichern
+                # Session automatic save
                 self.silent_save_session()
                 
             self.update_bias_info_label()
             
             if bias_text:
-                self.console_print("💭 BIAS automatisch aktualisiert", "info")
+                self.console_print("💭 BIAS automatic aktualisiert", "info")
             else:
                 self.console_print("💭 BIAS entfernt", "info")
     
@@ -1882,12 +1887,12 @@ class A1Terminal:
             if len(bias_text) > 50:
                 preview += "..."
             self.bias_info_label.configure(
-                text=f"💭 BIAS aktiv: {preview}",
-                text_color="#4CAF50"  # Grün für aktiv
+                text=f"💭 BIAS active: {preview}",
+                text_color="#4CAF50"  # Green für active
             )
         else:
             self.bias_info_label.configure(
-                text="💭 BIAS nicht gesetzt",
+                text="💭 BIAS not set",
                 text_color="gray"
             )
 
@@ -1901,18 +1906,18 @@ class A1Terminal:
         if session_count == 1:
             # Letzte Session - besondere Warnung
             result = messagebox.askyesno(
-                "Letzte Session löschen",
+                "Letzte Session delete",
                 "Dies ist die letzte Session.\n\n"
-                "Möchten Sie diese wirklich löschen?\n"
-                "Nach dem Löschen wird eine neue leere Session erstellt."
+                "Möchten You diese wirklich delete?\n"
+                "Nach dem Delete is being eine neue leere Session created."
             )
         else:
             # Normale Bestätigung
             result = messagebox.askyesno(
-                "Session löschen",
-                f"Möchten Sie die aktuelle Session wirklich löschen?\n\n"
+                "Session delete",
+                f"Möchten You die aktuelle Session wirklich delete?\n\n"
                 f"Session: {self.sessions[self.current_session_id].get('name', 'Unbenannt')}\n"
-                f"({len(self.sessions[self.current_session_id].get('messages', []))} Nachrichten)"
+                f"({len(self.sessions[self.current_session_id].get('messages', []))} Messages)"
             )
         
         if not result:
@@ -1920,7 +1925,7 @@ class A1Terminal:
             
         deleted_session_id = self.current_session_id
         
-        # Alle zugehörigen Session-Dateien löschen (unabhängig vom Namen)
+        # Alle zugehörigen Session-Dateien delete (unabhängig vom Namen)
         try:
             deleted_files = 0
             for f in os.listdir(self.sessions_dir):
@@ -1930,26 +1935,26 @@ class A1Terminal:
                         os.remove(file_path)
                         deleted_files += 1
                     except Exception as e:
-                        self.console_print(f"❌ Fehler beim Löschen der Session-Datei {f}: {e}", "error")
+                        self.console_print(f"❌ Error deleting session file {f}: {e}", "error")
             if deleted_files == 0:
-                self.console_print(f"⚠️ Keine Session-Datei für {self.current_session_id} gefunden.", "warning")
+                self.console_print(f"⚠️ No session file found for {self.current_session_id}.", "warning")
         except Exception as e:
-            self.console_print(f"❌ Fehler beim Löschen der Session-Dateien: {e}", "error")
+            self.console_print(f"❌ Error deleting session files: {e}", "error")
         
-        # Session aus Speicher entfernen
+        # Remove session from memory
         if self.current_session_id in self.sessions:
             del self.sessions[self.current_session_id]
         
-        # Sessions persistent speichern
+        # Sessions persistent save
         try:
             with open("sessions.json", "w", encoding="utf-8") as f:
                 json.dump(self.sessions, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            self.console_print(f"❌ Fehler beim Speichern der Session-Liste: {e}", "error")
+            self.console_print(f"❌ Error beim Save der Session-List: {e}", "error")
         
-        self.console_print(f"🗑️ Session gelöscht: {deleted_session_id}", "warning")
+        self.console_print(f"🗑️ Session deleted: {deleted_session_id}", "warning")
         
-        # UI sofort aktualisieren
+        # UI sofort refresh
         self.update_session_list()
         self.update_current_session_display()
         
@@ -1964,7 +1969,7 @@ class A1Terminal:
             self.load_session(latest_session)
             self.console_print(f"🔄 Gewechselt zu Session: {latest_session}", "info")
         else:
-            # Alle Sessions gelöscht - Chat leeren aber keine neue Session erstellen
+            # Alle Sessions deleted - Chat leeren aber keine neue Session create
             self.current_session_id = None
             self.clear_chat_for_new_session()
             
@@ -1981,24 +1986,24 @@ class A1Terminal:
             if hasattr(self, 'model_dropdown'):
                 self.model_dropdown.update_models({})
                 
-            self.console_print("🔄 Alle Sessions gelöscht - Chat bereit für neue Session", "info")
+            self.console_print("🔄 All sessions deleted - chat ready for new session", "info")
 
     def delete_all_sessions(self):
-        """Löscht alle Sessions nach Bestätigung"""
+        """Deletes all sessions after confirmation"""
         if not self.sessions:
-            messagebox.showinfo("Keine Sessions", "Es sind keine Sessions zum Löschen vorhanden.")
+            messagebox.showinfo("No sessions", "There are no sessions to delete.")
             return
         
         session_count = len(self.sessions)
         
         # Bestätigungs-Dialog
         result = messagebox.askyesno(
-            "Alle Sessions löschen",
-            f"Möchten Sie wirklich ALLE {session_count} Sessions löschen?\n\n⚠️ WARNUNG: Dieser Vorgang kann nicht rückgängig gemacht werden!\nAlle Chat-Verläufe und Session-Daten gehen verloren."
+            "Alle Sessions delete",
+            f"Möchten You wirklich ALLE {session_count} Sessions delete?\n\n⚠️ WARNUNG: Dieser Vorgang kann nicht rückgängig gemacht werden!\nAlle Chat-Verläufe und Session-Daten gehen verloren."
         )
         
         if result:
-            # Alle Session-Dateien löschen
+            # Alle Session-Dateien delete
             deleted_count = 0
             failed_count = 0
             
@@ -2013,20 +2018,20 @@ class A1Terminal:
                             deleted_count += 1
                         except Exception as e:
                             failed_count += 1
-                            self.console_print(f"❌ Fehler beim Löschen von {f}: {e}", "error")
+                            self.console_print(f"❌ Error deleting {f}: {e}", "error")
                 if not found_file:
-                    self.console_print(f"⚠️ Keine Session-Datei für {session_id} gefunden.", "warning")
+                    self.console_print(f"⚠️ No session file found for {session_id}.", "warning")
             
-            # Alle Sessions aus Speicher entfernen
+            # Remove all sessions from memory
             self.sessions.clear()
             self.current_session_id = None
             
-            # Sessions-Datei aktualisieren (leere Datei)
+            # Sessions-File refresh (leere File)
             try:
                 with open("sessions.json", "w", encoding="utf-8") as f:
                     json.dump({}, f, indent=2, ensure_ascii=False)
             except Exception as e:
-                self.console_print(f"❌ Fehler beim Speichern der leeren Session-Liste: {e}", "error")
+                self.console_print(f"❌ Error beim Save der leeren Session-List: {e}", "error")
             
             # UI zurücksetzen
             self.clear_chat_for_new_session()
@@ -2042,18 +2047,18 @@ class A1Terminal:
             if hasattr(self, 'model_dropdown'):
                 self.model_dropdown.update_models({})
             
-            # Ergebnis anzeigen
+            # Ergebnis show
             if failed_count == 0:
-                self.console_print(f"🧹 Alle {deleted_count} Sessions erfolgreich gelöscht", "success")
+                self.console_print(f"🧹 Alle {deleted_count} Sessions erfolgreich deleted", "success")
                 messagebox.showinfo(
                     "Bereinigung abgeschlossen", 
-                    f"✅ Alle {deleted_count} Sessions wurden erfolgreich gelöscht.\n\nKlicken Sie auf '➕ Neue Session' um zu beginnen."
+                    f"✅ Alle {deleted_count} Sessions wurden erfolgreich deleted.\n\nKlicken You auf '➕ New Session' to begin."
                 )
             else:
-                self.console_print(f"🧹 {deleted_count} Sessions gelöscht, {failed_count} Fehler", "warning")
+                self.console_print(f"🧹 {deleted_count} Sessions deleted, {failed_count} Error", "warning")
                 messagebox.showwarning(
                     "Bereinigung mit Fehlern", 
-                    f"⚠️ {deleted_count} Sessions gelöscht, aber {failed_count} Fehler aufgetreten.\nSiehe Konsole für Details."
+                    f"⚠️ {deleted_count} Sessions deleted, aber {failed_count} Error aufgetreten.\nSiehe Konsole für Details."
                 )
 
     def clear_chat_for_new_session(self):
@@ -2074,7 +2079,7 @@ class A1Terminal:
         self.message_history.clear()
         self.history_index = -1
         
-        # Layout MEHRFACH und gründlich aktualisieren nach dem Löschen
+        # Layout MEHRFACH und gründlich refresh nach dem Delete
         if hasattr(self, 'chat_display_frame'):
             # Sofortiges Update
             self.chat_display_frame.update()
@@ -2100,16 +2105,16 @@ class A1Terminal:
                     pass
 
     def restore_chat_message(self, msg_data):
-        """Stellt eine Chat-Nachricht aus Session-Daten wieder her"""
+        """Stellt eine Chat-Message aus Session-Daten wieder her"""
         timestamp = msg_data.get("timestamp", datetime.now().strftime("%H:%M:%S"))
         sender = msg_data.get("sender", "System")
         message = msg_data.get("message", "")
         
-        # System-Nachrichten ausblenden wenn Flag gesetzt ist (gleiche Logik wie in add_to_chat)
+        # System-Messages ausblenden wenn Flag gesetzt ist (gleiche Logik wie in add_to_chat)
         if sender == "System" and not self.config.get("show_system_messages", True):
-            return  # Keine UI-Bubble erstellen für ausgeblendete System-Nachrichten
+            return  # Keine UI-Bubble create für ausgeblendete System-Messages
         
-        # Chat-Bubble erstellen
+        # Chat-Bubble create
         bubble = ChatBubble(
             self.chat_display_frame,
             sender=sender,
@@ -2177,30 +2182,30 @@ class A1Terminal:
     def setup_chat_tab(self):
         """Erstellt den Chat-Tab mit allen Elementen"""
         
-        # Chat-Bereich (Modell-Management jetzt im Session Panel)
+        # Chat-Area (Model-Management jetzt im Session Panel)
         self.chat_frame = ctk.CTkFrame(self.chat_tab)
         self.chat_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Chat-Verlauf mit Scrollable Frame und farbiger Umrandung für aktive Session
+        # Chat history with scrollable frame and colored border for active session
         self.chat_display_frame = ctk.CTkScrollableFrame(
             self.chat_frame,
-            label_text="Chat-Verlauf",
+            label_text="Chat History",
             border_width=3,
-            border_color="#4A4A4A"  # Standard-Grau, wird bei Session-Wechsel aktualisiert
+            border_color="#4A4A4A"  # Standard gray, updated on session change
         )
         self.chat_display_frame.pack(fill="both", expand=True, padx=10, pady=(10, 5))
         
-        # Liste für Chat-Bubbles
+        # List für Chat-Bubbles
         self.chat_bubbles = []
         
-        # Eingabe-Bereich
+        # Input-Area
         self.input_frame = ctk.CTkFrame(self.chat_frame)
         self.input_frame.pack(fill="x", padx=self.config.get("ui_padding_main", 10), 
                              pady=(self.config.get("ui_padding_content", 5), self.config.get("ui_padding_main", 10)))
         
         self.message_entry = ctk.CTkEntry(
             self.input_frame,
-            placeholder_text="Nachricht eingeben...",
+            placeholder_text="Message eingeben...",
             font=("Arial", self.config.get("ui_input_font_size", 12)),
             height=self.config.get("ui_input_height", 40)
         )
@@ -2214,7 +2219,7 @@ class A1Terminal:
         
         self.send_btn = ctk.CTkButton(
             self.input_frame,
-            text="Senden",
+            text="Send",
             command=self.send_message,
             width=self.config.get("ui_button_width", 100),
             height=self.config.get("ui_button_height", 40),
@@ -2247,7 +2252,7 @@ class A1Terminal:
         config_container.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Haupt-Scrollable Frame für Config-Inhalte
-        config_scroll = ctk.CTkScrollableFrame(config_container, label_text="Konfiguration")
+        config_scroll = ctk.CTkScrollableFrame(config_container, label_text="Configuration")
         config_scroll.pack(fill="both", expand=True, padx=10, pady=(10, 10))
         
         # Fixierte Button-Leiste am unteren Rand
@@ -2259,13 +2264,13 @@ class A1Terminal:
         button_container.pack(expand=True)
         
         # Buttons nebeneinander zentriert
-        restart_btn = ctk.CTkButton(button_container, text="🔄 Übernehmen & Neustart", 
+        restart_btn = ctk.CTkButton(button_container, text="🔄 Apply & Restart", 
                                    command=self.apply_and_restart, 
                                    width=200, height=40, font=("Arial", 13, "bold"),
                                    fg_color="#1f538d", hover_color="#2a6bb0")
         restart_btn.pack(side="left", padx=10, pady=15)
         
-        reset_btn = ctk.CTkButton(button_container, text="↩️ Standard", command=self.reset_config, 
+        reset_btn = ctk.CTkButton(button_container, text="↩️ Default", command=self.reset_config, 
                                  width=150, height=40, font=("Arial", 13, "bold"),
                                  fg_color="#722F37", hover_color="#8a3a45")
         reset_btn.pack(side="left", padx=10, pady=15)
@@ -2274,13 +2279,13 @@ class A1Terminal:
         bubble_frame = ctk.CTkFrame(config_scroll)
         bubble_frame.pack(fill="x", pady=(0, 20))
         
-        bubble_title = ctk.CTkLabel(bubble_frame, text="🎨 Chat-Bubble Farben", font=("Arial", 16, "bold"))
+        bubble_title = ctk.CTkLabel(bubble_frame, text="🎨 Chat Bubble Colors", font=("Arial", 16, "bold"))
         bubble_title.pack(pady=(15, 10))
         
-        # Sie (User) Farben - Komprimiert
+        # You (User) Farben - Komprimiert
         user_main_frame = ctk.CTkFrame(bubble_frame)
         user_main_frame.pack(fill="x", padx=15, pady=5)
-        ctk.CTkLabel(user_main_frame, text="💬 Sie:", font=("Arial", 11, "bold"), width=50).pack(side="left", padx=5)
+        ctk.CTkLabel(user_main_frame, text="💬 You:", font=("Arial", 11, "bold"), width=50).pack(side="left", padx=5)
         
         user_colors_frame = ctk.CTkFrame(user_main_frame)
         user_colors_frame.pack(side="left", fill="x", expand=True, padx=5)
@@ -2290,7 +2295,7 @@ class A1Terminal:
         self.user_text_entry, self.user_text_preview = self.setup_color_input_with_preview(
             user_colors_frame, "Text:", "user_text_color", "#00FF00")
         
-        # AI-Modell Farben - Komprimiert  
+        # AI-Model Farben - Komprimiert  
         ai_main_frame = ctk.CTkFrame(bubble_frame)
         ai_main_frame.pack(fill="x", padx=15, pady=5)
         ctk.CTkLabel(ai_main_frame, text="🤖 AI:", font=("Arial", 11, "bold"), width=50).pack(side="left", padx=5)
@@ -2320,7 +2325,7 @@ class A1Terminal:
         font_frame = ctk.CTkFrame(config_scroll)
         font_frame.pack(fill="x", pady=(0, 15))
         
-        font_title = ctk.CTkLabel(font_frame, text="🔤 Schriftarten", font=("Arial", 16, "bold"))
+        font_title = ctk.CTkLabel(font_frame, text="🔤 Fonts", font=("Arial", 16, "bold"))
         font_title.pack(pady=(10, 5))
         
         # Font-Dropdowns mit individuellen Größen
@@ -2332,7 +2337,7 @@ class A1Terminal:
         user_font_frame.pack(fill="x", pady=3)
         
         # Label und Dropdown
-        ctk.CTkLabel(user_font_frame, text="Sie (Matrix):", width=100).pack(side="left", padx=5)
+        ctk.CTkLabel(user_font_frame, text="You:", width=100).pack(side="left", padx=5)
         self.user_font_combo = ctk.CTkComboBox(user_font_frame, 
             values=["Courier New", "Consolas", "Monaco", "Lucida Console"],
             width=130, command=self.update_user_font_preview)
@@ -2342,7 +2347,7 @@ class A1Terminal:
         # Mausrad-Scrolling für user_font_combo aktivieren
         
         # Größen-Slider
-        ctk.CTkLabel(user_font_frame, text="Größe:", width=40).pack(side="left", padx=(15, 2))
+        ctk.CTkLabel(user_font_frame, text="Size:", width=40).pack(side="left", padx=(15, 2))
         self.user_font_size_slider = ctk.CTkSlider(user_font_frame, from_=8, to=24, number_of_steps=16, width=100)
         self.user_font_size_slider.pack(side="left", padx=3)
         self.user_font_size_slider.set(self.config["user_font_size"])
@@ -2361,7 +2366,7 @@ class A1Terminal:
         ai_font_frame.pack(fill="x", pady=3)
         
         # Label und Dropdown
-        ctk.CTkLabel(ai_font_frame, text="AI-Modell:", width=100).pack(side="left", padx=5)
+        ctk.CTkLabel(ai_font_frame, text="AI-Model:", width=100).pack(side="left", padx=5)
         self.ai_font_combo = ctk.CTkComboBox(ai_font_frame,
             values=["Consolas", "Courier New", "Arial", "Segoe UI"],
             width=130, command=self.update_ai_font_preview)
@@ -2371,7 +2376,7 @@ class A1Terminal:
         # Mausrad-Scrolling für ai_font_combo aktivieren
         
         # Größen-Slider
-        ctk.CTkLabel(ai_font_frame, text="Größe:", width=40).pack(side="left", padx=(15, 2))
+        ctk.CTkLabel(ai_font_frame, text="Size:", width=40).pack(side="left", padx=(15, 2))
         self.ai_font_size_slider = ctk.CTkSlider(ai_font_frame, from_=8, to=24, number_of_steps=16, width=100)
         self.ai_font_size_slider.pack(side="left", padx=3)
         self.ai_font_size_slider.set(self.config["ai_font_size"])
@@ -2400,7 +2405,7 @@ class A1Terminal:
         # Mausrad-Scrolling für system_font_combo aktivieren
         
         # Größen-Slider
-        ctk.CTkLabel(system_font_frame, text="Größe:", width=40).pack(side="left", padx=(15, 2))
+        ctk.CTkLabel(system_font_frame, text="Size:", width=40).pack(side="left", padx=(15, 2))
         self.system_font_size_slider = ctk.CTkSlider(system_font_frame, from_=8, to=24, number_of_steps=16, width=100)
         self.system_font_size_slider.pack(side="left", padx=3)
         self.system_font_size_slider.set(self.config["system_font_size"])
@@ -2409,7 +2414,7 @@ class A1Terminal:
         self.system_font_size_slider.configure(command=self.update_system_font_preview)
         
         # Preview
-        self.system_font_preview = ctk.CTkLabel(system_font_frame, text="ℹ️ System-Nachricht", 
+        self.system_font_preview = ctk.CTkLabel(system_font_frame, text="ℹ️ System-Message", 
                                                font=(self.config["system_font"], self.config["system_font_size"]),
                                                text_color="#FFFFFF", width=150)
         self.system_font_preview.pack(side="left", padx=10)
@@ -2419,51 +2424,51 @@ class A1Terminal:
         ui_settings_frame = ctk.CTkFrame(config_scroll)
         ui_settings_frame.pack(fill="x", pady=(10, 15))
         
-        ui_settings_title = ctk.CTkLabel(ui_settings_frame, text="🎛️ Layout & Größen", font=("Arial", 16, "bold"))
+        ui_settings_title = ctk.CTkLabel(ui_settings_frame, text="🎛️ Layout & Sizes", font=("Arial", 16, "bold"))
         ui_settings_title.pack(pady=(15, 10))
         
-        # Session Panel Breite
-        self.create_config_slider(ui_settings_frame, "Session-Panel Breite:", "ui_session_panel_width", 
+        # Session Panel Width
+        self.create_config_slider(ui_settings_frame, "Session Panel Width:", "ui_session_panel_width", 
                                  200, 600, self.config.get('ui_session_panel_width', 350), "px")
         
-        # Fenster-Startgröße
-        self.create_config_slider(ui_settings_frame, "Fensterbreite (Start):", "ui_window_width", 
+        # Window Start Size
+        self.create_config_slider(ui_settings_frame, "Window Width (Start):", "ui_window_width", 
                                  1000, 2560, self.config.get('ui_window_width', 1400), "px")
-        self.create_config_slider(ui_settings_frame, "Fensterhöhe (Start):", "ui_window_height", 
+        self.create_config_slider(ui_settings_frame, "Window Height (Start):", "ui_window_height", 
                                  600, 1440, self.config.get('ui_window_height', 900), "px")
         
         # Input & Buttons
-        ui_input_title = ctk.CTkLabel(ui_settings_frame, text="⌨️ Eingabe & Buttons", font=("Arial", 14, "bold"))
+        ui_input_title = ctk.CTkLabel(ui_settings_frame, text="⌨️ Input & Buttons", font=("Arial", 14, "bold"))
         ui_input_title.pack(pady=(15, 5))
         
-        self.create_config_slider(ui_settings_frame, "Eingabefeld-Höhe:", "ui_input_height", 
+        self.create_config_slider(ui_settings_frame, "Input Field Height:", "ui_input_height", 
                                  30, 60, self.config.get('ui_input_height', 40), "px")
-        self.create_config_slider(ui_settings_frame, "Eingabe-Schriftgröße:", "ui_input_font_size", 
+        self.create_config_slider(ui_settings_frame, "Input Font Size:", "ui_input_font_size", 
                                  9, 18, self.config.get('ui_input_font_size', 12), "px")
-        self.create_config_slider(ui_settings_frame, "Button-Breite:", "ui_button_width", 
+        self.create_config_slider(ui_settings_frame, "Button Width:", "ui_button_width", 
                                  60, 150, self.config.get('ui_button_width', 100), "px")
-        self.create_config_slider(ui_settings_frame, "Button-Höhe:", "ui_button_height", 
+        self.create_config_slider(ui_settings_frame, "Button Height:", "ui_button_height", 
                                  25, 60, self.config.get('ui_button_height', 40), "px")
         
         # Erweiterte Optionen
-        ui_options_title = ctk.CTkLabel(ui_settings_frame, text="⚡ Erweiterte Optionen", font=("Arial", 14, "bold"))
+        ui_options_title = ctk.CTkLabel(ui_settings_frame, text="⚡ Advanced Options", font=("Arial", 14, "bold"))
         ui_options_title.pack(pady=(15, 5))
         
         options_frame = ctk.CTkFrame(ui_settings_frame)
         options_frame.pack(fill="x", padx=15, pady=(5, 10))
         
-        # System-Nachrichten Toggle (verschoben hierher)
+        # System-Messages Toggle (verschoben hierher)
         self.show_system_messages_var = ctk.BooleanVar(value=self.config.get("show_system_messages", True))
         system_msg_checkbox = ctk.CTkCheckBox(
             options_frame,
-            text="📢 System-Nachrichten im Chat anzeigen",
+            text="📢 System-Messages im Chat show",
             variable=self.show_system_messages_var,
             font=("Arial", 11)
         )
         system_msg_checkbox.pack(anchor="w", padx=10, pady=5)
         
         self.auto_scroll_var = ctk.BooleanVar(value=self.config.get("auto_scroll_chat", True))
-        auto_scroll_cb = ctk.CTkCheckBox(options_frame, text="📜 Auto-Scroll zu neuen Nachrichten", 
+        auto_scroll_cb = ctk.CTkCheckBox(options_frame, text="📜 Auto-Scroll to New Messages", 
                                         variable=self.auto_scroll_var, font=("Arial", 11))
         auto_scroll_cb.pack(anchor="w", padx=10, pady=5)
     
@@ -2505,22 +2510,22 @@ class A1Terminal:
             if current_color and current_color.startswith('#'):
                 initial_color = current_color
             else:
-                initial_color = "#00FF00"  # Standard-Grün
+                initial_color = "#00FF00"  # Standard green
             
-            # Farbwähler öffnen
+            # Open color picker
             color = colorchooser.askcolor(
                 color=initial_color,
-                title="🎨 Farbe auswählen",
+                title="🎨 Select Color",
                 parent=self.root
             )
             
             # Wenn eine Farbe gewählt wurde, aktualisiere das Entry-Feld
-            if color[1]:  # color[1] enthält den Hex-Wert
+            if color[1]:  # color[1] contains the hex value
                 entry_widget.delete(0, 'end')
                 entry_widget.insert(0, color[1].upper())
                 
         except Exception as e:
-            messagebox.showerror("Fehler", f"Fehler beim Öffnen des Farbwählers: {e}")
+            messagebox.showerror("Error", f"Error opening color picker: {e}")
     
     def create_color_preview(self, parent, color, size=20):
         """Erstellt ein kleines farbiges Quadrat als Farb-Preview"""
@@ -2576,14 +2581,14 @@ class A1Terminal:
             else:
                 initial_color = "#00FF00"
             
-            # Farbwähler öffnen
+            # Open color picker
             color = colorchooser.askcolor(
                 color=initial_color,
-                title="🎨 Farbe auswählen",
+                title="🎨 Select Color",
                 parent=self.root
             )
             
-            # Wenn eine Farbe gewählt wurde, aktualisiere Entry und Preview
+            # If a color was selected, update entry and preview
             if color[1]:
                 hex_color = color[1].upper()
                 entry_widget.delete(0, 'end')
@@ -2591,10 +2596,10 @@ class A1Terminal:
                 preview_label.configure(fg_color=hex_color)
                 
         except Exception as e:
-            messagebox.showerror("Fehler", f"Fehler beim Öffnen des Farbwählers: {e}")
+            messagebox.showerror("Error", f"Error opening color picker: {e}")
     
     def update_user_font_preview(self, value=None):
-        """Aktualisiert User Font Preview"""
+        """Updates user font preview"""
         try:
             selected_font = self.user_font_combo.get()
             font_size = int(self.user_font_size_slider.get())
@@ -2651,42 +2656,42 @@ class A1Terminal:
                 for config_key, slider in self.config_sliders.items():
                     self.config[config_key] = int(slider.get())
             
-            # Speichere Konfiguration in YAML-Datei
+            # Speichere Configuration in YAML-File
             self.save_config()
             
-            # Aktualisiere alle bestehenden Chat-Bubbles mit neuer Konfiguration
+            # Aktualisiere alle bestehenden Chat-Bubbles mit neuer Configuration
             self.update_all_chat_bubbles()
             
             # Show success message
-            self.add_to_chat("System", "✅ Konfiguration erfolgreich angewendet und gespeichert! Änderungen werden beim nächsten Start vollständig übernommen.")
+            self.add_to_chat("System", "✅ Configuration successfully applied and saved! Changes will be fully applied at next start.")
             
             # Info bei UI-Layout-Änderungen
             if hasattr(self, 'config_sliders'):
-                self.add_to_chat("System", "ℹ️ Layout-Änderungen (Panel-Größen, Button-Größen etc.) werden beim nächsten Neustart der App aktiv.")
+                self.add_to_chat("System", "ℹ️ Layout changes (panel sizes, button sizes etc.) will become active after next restart.")
             
         except Exception as e:
-            self.add_to_chat("System", f"❌ Fehler beim Anwenden der Konfiguration: {e}")
+            self.add_to_chat("System", f"❌ Error beim Anwenden der Configuration: {e}")
     
     def apply_and_restart(self):
-        """Wendet Konfiguration an und startet die Anwendung neu"""
+        """Wendet Configuration an und startet die Anwendung new"""
         try:
-            # Speichere Konfiguration
+            # Speichere Configuration
             self.apply_config()
             
             # Kurze Pause damit Nutzer die Bestätigung sieht
             self.root.after(800, self.restart_application)
             
         except Exception as e:
-            self.add_to_chat("System", f"❌ Fehler beim Neustart: {e}")
+            self.add_to_chat("System", f"❌ Error beim Neustart: {e}")
     
     def restart_application(self):
-        """Startet die Anwendung neu mit dem restart.py Script"""
+        """Startet die Anwendung new mit dem restart.py Script"""
         try:
             import sys
             import subprocess
             import os
             
-            self.add_to_chat("System", "🔄 Anwendung wird neu gestartet...")
+            self.add_to_chat("System", "🔄 Anwendung is being new started...")
             self.root.update()
             
             # Speichere aktuelle Session
@@ -2710,7 +2715,7 @@ class A1Terminal:
             self.root.after(300, self.root.destroy)
             
         except Exception as e:
-            self.add_to_chat("System", f"❌ Fehler beim Neustart der Anwendung: {e}")
+            self.add_to_chat("System", f"❌ Error beim Neustart der Anwendung: {e}")
     
     def update_all_chat_bubbles(self):
         """Aktualisiert das Styling aller bestehenden Chat-Bubbles"""
@@ -2721,19 +2726,19 @@ class A1Terminal:
                 updated_count += 1
             
             if updated_count > 0:
-                self.console_print(f"🎨 {updated_count} Chat-Bubbles mit neuer Konfiguration aktualisiert", "info")
+                self.console_print(f"🎨 {updated_count} Chat-Bubbles mit neuer Configuration aktualisiert", "info")
                 
-                # Scrolle den Chat-Bereich nach unten, um Updates sichtbar zu machen
+                # Scrolle den Chat-Area nach unten, um Updates sichtbar zu machen
                 if self.config.get("auto_scroll_chat", True):
                     self.chat_display_frame._parent_canvas.after(100, 
                         lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
                     
         except Exception as e:
-            self.console_print(f"❌ Fehler beim Aktualisieren der Chat-Bubbles: {e}", "error")
+            self.console_print(f"❌ Error beim Refresh der Chat-Bubbles: {e}", "error")
     
     
     def reset_config(self):
-        """Setzt die Konfiguration auf Standardwerte zurück"""
+        """Setzt die Configuration auf Default values back"""
         # Verwende die neue reset_config_to_defaults() Methode
         self.reset_config_to_defaults()
         
@@ -2771,25 +2776,25 @@ class A1Terminal:
         # UI-Optionen
         self.show_system_messages_var.set(self.config.get("show_system_messages", True))
         
-        self.add_to_chat("System", "🔄 Konfiguration auf Standardwerte zurückgesetzt und gespeichert!")
+        self.add_to_chat("System", "🔄 Configuration reset to default values and saved!")
     
     def check_ollama_status(self):
         """Prüft Ollama-Status und lädt Modelle"""
         def check():
             if self.ollama.is_ollama_running():
-                self.status_label.configure(text="Ollama Status: ✅ Verbunden")
+                self.status_label.configure(text="Ollama Status: ✅ Connected")
                 self.refresh_models()
                 self.load_available_models()
             else:
-                self.status_label.configure(text="Ollama Status: ❌ Nicht verbunden")
-                self.add_to_chat("System", "Ollama ist nicht erreichbar. Stellen Sie sicher, dass Ollama läuft.")
+                self.status_label.configure(text="Ollama Status: ❌ Not Connected")
+                self.add_to_chat("System", "Ollama ist nicht erreichbar. Stellen You sicher, dass Ollama running.")
         
         threading.Thread(target=check, daemon=True).start()
     
     def load_available_models(self):
         """Lädt alle verfügbaren Ollama-Modelle"""
         def load():
-            self.add_to_chat("System", "🔄 Lade aktuelle Modell-Liste von Ollama...")
+            self.add_to_chat("System", "🔄 Lade aktuelle Model-List von Ollama...")
             all_models = self.ollama.get_all_ollama_models()
             
             if all_models:
@@ -2804,7 +2809,7 @@ class A1Terminal:
                             size_info = param_size.upper()
                     
                     models_dict[model_name] = {
-                        "size": f"~{size_info.replace('B', ' Mrd Parameter')}" if size_info else "Verfügbar",
+                        "size": f"~{size_info.replace('B', ' Mrd Parameter')}" if size_info else "Available",
                         "type": "LLM",
                         "parameters": size_info
                     }
@@ -2812,17 +2817,17 @@ class A1Terminal:
                 self.root.after(0, lambda: self.available_dropdown.update_models(models_dict))
                 model_count = len(models_dict)
                 self.root.after(0, lambda: self.add_to_chat("System", 
-                    f"✅ {model_count} Modelle zum Download verfügbar"))
+                    f"✅ {model_count} Modelle zum Download available"))
             else:
                 self.root.after(0, lambda: self.available_dropdown.update_models({}))
-                self.root.after(0, lambda: self.add_to_chat("System", "❌ Keine Modelle verfügbar"))
+                self.root.after(0, lambda: self.add_to_chat("System", "❌ Keine Modelle available"))
         
         threading.Thread(target=load, daemon=True).start()
     
     def refresh_models(self):
-        """Aktualisiert die Modell-Listen"""
+        """Aktualisiert die Model-Listen"""
         def update():
-            # Installierte Modelle aktualisieren
+            # Installed Models refresh
             models = self.ollama.get_available_models()
             if models:
                 # Erstelle Model-Info-Dict für installierte Modelle
@@ -2830,7 +2835,7 @@ class A1Terminal:
                 for model in models:
                     # Versuche Größe und Info zu bekommen
                     models_dict[model] = {
-                        "size": "Installiert",
+                        "size": "Installed",
                         "type": "LLM",
                         "parameters": ""
                     }
@@ -2839,11 +2844,16 @@ class A1Terminal:
                 if not self.current_model or self.current_model not in models:
                     self.root.after(0, lambda: self.model_dropdown.set_selected(models[0]))
                     self.current_model = models[0]
+                    # Update model info panel for initial model
+                    self.root.after(100, lambda: self.update_model_info_panel(models[0]))
+                else:
+                    # Update model info panel for current model
+                    self.root.after(100, lambda: self.update_model_info_panel(self.current_model))
             else:
                 self.root.after(0, lambda: self.model_dropdown.update_models({}))
                 self.current_model = None
             
-            # Verfügbare Modelle aktualisieren
+            # Verfügbare Modelle refresh
             all_models = self.ollama.get_all_ollama_models()
             if all_models:
                 # Konvertiere zu Model-Info-Dict
@@ -2856,7 +2866,7 @@ class A1Terminal:
                             size_info = param_size.upper()
                     
                     download_models_dict[model_name] = {
-                        "size": f"~{size_info.replace('B', ' Mrd Parameter')}" if size_info else "Verfügbar",
+                        "size": f"~{size_info.replace('B', ' Mrd Parameter')}" if size_info else "Available",
                         "type": "LLM",
                         "parameters": size_info
                     }
@@ -2866,23 +2876,23 @@ class A1Terminal:
         threading.Thread(target=update, daemon=True).start()
     
     def on_model_select_new(self, choice):
-        """Behandelt Modell-Auswahl (neue Methode für ModelInfoDropdown)"""
+        """Behandelt Model-Auswahl (neue Methode für ModelInfoDropdown)"""
         self.on_model_select(choice)
         self.update_model_info_panel(choice)
     
     def update_model_info_panel(self, model_name):
-        """Aktualisiert das Modell-Info-Panel mit Details zum ausgewählten Modell"""
+        """Aktualisiert das Model-Info-Panel mit Details zum ausgewählten Model"""
         if not model_name:
             self.model_info_text.configure(state="normal")
             self.model_info_text.delete("1.0", "end")
-            self.model_info_text.insert("1.0", "Wählen Sie ein Modell aus,\num Details anzuzeigen.")
+            self.model_info_text.insert("1.0", "Select a model\nto view details.")
             self.model_info_text.configure(state="disabled")
             return
         
-        # Modell-Informationen zusammenstellen
+        # Model-Informationen zusammenstellen
         def fetch_info():
             try:
-                info_text = f"📦 Modell: {model_name}\n\n"
+                info_text = f"📦 Model: {model_name}\n\n"
                 api_success = False
                 
                 # Versuche Infos über Ollama API zu bekommen
@@ -2899,15 +2909,15 @@ class A1Terminal:
                             
                             if 'parameter_size' in details:
                                 param_size = details['parameter_size']
-                                info_text += f"🔢 Parameter: {param_size}\n"
+                                info_text += f"🔢 Parameters: {param_size}\n"
                             
                             if 'quantization_level' in details:
                                 quant = details['quantization_level']
-                                info_text += f"⚙️ Quantisierung: {quant}\n"
+                                info_text += f"⚙️ Quantization: {quant}\n"
                             
                             if 'family' in details:
                                 family = details['family']
-                                info_text += f"👪 Familie: {family.title()}\n"
+                                info_text += f"👪 Family: {family.title()}\n"
                             
                             if 'format' in details:
                                 format_info = details['format']
@@ -2923,40 +2933,40 @@ class A1Terminal:
                             size_mb = result['size'] / (1024 * 1024)
                             if size_mb >= 1024:
                                 size_gb = size_mb / 1024
-                                info_text += f"💾 Größe: {size_gb:.2f} GB\n"
+                                info_text += f"💾 Size: {size_gb:.2f} GB\n"
                             else:
-                                info_text += f"� Größe: {size_mb:.0f} MB\n"
+                                info_text += f"💾 Size: {size_mb:.0f} MB\n"
                         
                         info_text += "\n"
                         
                         # Template info
                         if 'template' in result and result['template']:
-                            info_text += "📝 Template: ✅ Konfiguriert\n"
+                            info_text += "📝 Template: ✅ Configured\n"
                         
                         # Modified date
                         if 'modified_at' in result:
                             modified = result['modified_at'].split('T')[0] if 'T' in result['modified_at'] else result['modified_at']
-                            info_text += f"🗓️ Letzte Änderung:\n   {modified}\n\n"
+                            info_text += f"🗓️ Last Modified:\n   {modified}\n\n"
                         
                         # Empfohlen für (basierend auf Familie und Tags)
                         recommendations = []
                         model_lower = model_name.lower()
                         
                         if 'code' in model_lower or 'coder' in model_lower:
-                            recommendations.append("💻 Code-Generierung")
-                            recommendations.append("🔧 Programmierung")
+                            recommendations.append("💻 Code Generation")
+                            recommendations.append("🔧 Programming")
                         elif 'llava' in model_lower or 'vision' in model_lower:
-                            recommendations.append("👁️ Bildanalyse")
+                            recommendations.append("👁️ Image Analysis")
                             recommendations.append("🖼️ Vision Tasks")
                         elif 'math' in model_lower or 'wizard' in model_lower:
-                            recommendations.append("🧮 Mathematik")
-                            recommendations.append("📐 Berechnungen")
+                            recommendations.append("🧮 Mathematics")
+                            recommendations.append("📐 Calculations")
                         elif 'sql' in model_lower:
-                            recommendations.append("🗄️ SQL-Queries")
-                            recommendations.append("📊 Datenbank")
+                            recommendations.append("🗄️ SQL Queries")
+                            recommendations.append("📊 Database")
                         elif 'med' in model_lower or 'bio' in model_lower:
-                            recommendations.append("🏥 Medizin")
-                            recommendations.append("🧬 Biologie")
+                            recommendations.append("🏥 Medicine")
+                            recommendations.append("🧬 Biology")
                         else:
                             # Standard Chat-Modelle
                             if 'b' in model_lower:
@@ -2964,63 +2974,63 @@ class A1Terminal:
                                 if param_num:
                                     param_val = int(param_num)
                                     if param_val <= 3:
-                                        recommendations.append("💬 Schnelle Antworten")
-                                        recommendations.append("📱 Mobile Geräte")
+                                        recommendations.append("💬 Quick Responses")
+                                        recommendations.append("📱 Mobile Devices")
                                     elif param_val <= 8:
-                                        recommendations.append("💬 Chat & Dialog")
-                                        recommendations.append("✍️ Texterstellung")
+                                        recommendations.append("💬 Chat & Dialogue")
+                                        recommendations.append("✍️ Text Creation")
                                     else:
-                                        recommendations.append("🎯 Komplexe Aufgaben")
-                                        recommendations.append("📚 Analyse & Recherche")
+                                        recommendations.append("🎯 Complex Tasks")
+                                        recommendations.append("📚 Analysis & Research")
                         
                         if recommendations:
-                            info_text += "✨ Empfohlen für:\n"
+                            info_text += "✨ Recommended for:\n"
                             for rec in recommendations[:3]:  # Max 3 Empfehlungen
                                 info_text += f"   {rec}\n"
                     
                 except Exception as e:
-                    print(f"Ollama API Fehler: {e}")
+                    print(f"Ollama API Error: {e}")
                     api_success = False
                 
                 # Fallback wenn ollama.show nicht funktioniert
                 if not api_success:
-                    info_text += "ℹ️ Typ: LLM\n"
+                    info_text += "ℹ️ Type: LLM\n"
                     
                     # Parse Parameter aus Modellname
                     if ':' in model_name:
                         param_info = model_name.split(':')[-1]
                         if 'b' in param_info.lower():
-                            param_clean = param_info.upper().replace('B', ' Milliarden')
-                            info_text += f"🔢 Parameter: ~{param_clean}\n"
+                            param_clean = param_info.upper().replace('B', ' Billion')
+                            info_text += f"🔢 Parameters: ~{param_clean}\n"
                     
-                    # Modell-Familie aus Namen ableiten
+                    # Model-Familie aus Namen ableiten
                     model_base = model_name.split(':')[0].lower()
                     if 'llama' in model_base:
-                        info_text += "👪 Familie: Llama\n"
+                        info_text += "👪 Family: Llama\n"
                     elif 'mistral' in model_base:
-                        info_text += "👪 Familie: Mistral\n"
+                        info_text += "👪 Family: Mistral\n"
                     elif 'gemma' in model_base:
-                        info_text += "👪 Familie: Gemma\n"
+                        info_text += "👪 Family: Gemma\n"
                     elif 'phi' in model_base:
-                        info_text += "👪 Familie: Phi\n"
+                        info_text += "👪 Family: Phi\n"
                     elif 'codellama' in model_base or 'code' in model_base:
-                        info_text += "👪 Familie: CodeLlama\n"
+                        info_text += "👪 Family: CodeLlama\n"
                     
                     info_text += "\n"
                     
                     # Empfehlungen auch im Fallback
                     recommendations = []
                     if 'code' in model_base:
-                        recommendations = ["💻 Code-Generierung", "🔧 Programmierung"]
+                        recommendations = ["💻 Code Generation", "🔧 Programming"]
                     elif 'llava' in model_base:
-                        recommendations = ["👁️ Bildanalyse", "🖼️ Vision Tasks"]
+                        recommendations = ["👁️ Image Analysis", "🖼️ Vision Tasks"]
                     elif 'math' in model_base:
-                        recommendations = ["🧮 Mathematik", "📐 Berechnungen"]
+                        recommendations = ["🧮 Mathematics", "📐 Calculations"]
                     else:
-                        recommendations = ["💬 Chat & Dialog", "✍️ Texterstellung"]
+                        recommendations = ["💬 Chat & Dialogue", "✍️ Text Creation"]
                     
                     if recommendations:
-                        info_text += "✨ Empfohlen für:\n"
+                        info_text += "✨ Recommended for:\n"
                         for rec in recommendations[:3]:
                             info_text += f"   {rec}\n"
                 
@@ -3028,58 +3038,58 @@ class A1Terminal:
                 self.root.after(0, lambda: self._update_info_text(info_text))
                 
             except Exception as e:
-                error_text = f"📦 Modell: {model_name}\n\n❌ Fehler beim Laden der Details:\n{str(e)}"
+                error_text = f"📦 Model: {model_name}\n\n❌ Error beim Load der Details:\n{str(e)}"
                 self.root.after(0, lambda: self._update_info_text(error_text))
         
         # Lade Infos in separatem Thread
         threading.Thread(target=fetch_info, daemon=True).start()
     
     def _update_info_text(self, text):
-        """Hilfsmethode zum Aktualisieren des Info-Textfelds (muss im Main-Thread laufen)"""
+        """Hilfsmethode zum Refresh des Info-Textfelds (muss im Main-Thread laufen)"""
         self.model_info_text.configure(state="normal")
         self.model_info_text.delete("1.0", "end")
         self.model_info_text.insert("1.0", text)
         self.model_info_text.configure(state="disabled")
     
     def on_model_select(self, choice):
-        """Behandelt Modell-Auswahl"""
-        if choice and choice != "Keine Modelle verfügbar":
+        """Behandelt Model-Auswahl"""
+        if choice and choice != "Keine Modelle available":
             self.current_model = choice
             
-            # WICHTIG: Nicht speichern während eine Session geladen wird
+            # WICHTIG: Nicht save während eine Session loaded is being
             if getattr(self, '_session_just_loaded', False):
-                # Session wird gerade geladen, nicht speichern
+                # Session is being gerade loaded, nicht save
                 return
             
-            # Chat-Historie nur bei neuen/leeren Sessions zurücksetzen
-            # Bei bestehenden Sessions mit Nachrichten die Historie beibehalten
+            # Reset chat history only for new/empty sessions
+            # Keep history for existing sessions with messages
             if not hasattr(self, 'chat_bubbles') or len(self.chat_bubbles) == 0:
-                self.chat_history = []  # Nur bei leeren Sessions zurücksetzen
-                self.console_print(f"🔄 Neue Session - Chat-Historie zurückgesetzt", "info")
+                self.chat_history = []  # Only reset for empty sessions
+                self.console_print(f"🔄 New session - chat history reset", "info")
             else:
-                self.console_print(f"📚 Bestehende Session - Chat-Historie beibehalten ({len(self.chat_history)} Nachrichten)", "info")
+                self.console_print(f"📚 Existing session - chat history kept ({len(self.chat_history)} messages)", "info")
             
-            # Model in aktueller Session speichern
+            # Save model in current session
             if hasattr(self, 'current_session_id') and self.current_session_id:
                 if self.current_session_id in self.sessions:
                     self.sessions[self.current_session_id]["model"] = choice
                     self.sessions[self.current_session_id]["last_modified"] = datetime.now().isoformat()
                     
-                    # Session persistent speichern
+                    # Session persistent save
                     self.save_session_with_feedback()
                     
-                    # UI vollständig aktualisieren
+                    # UI vollständig refresh
                     self.update_current_session_display()
                     self.update_session_list()
             
-            self.add_to_chat("System", f"Modell gewechselt zu: {choice}")
-            self.console_print(f"🤖 Model gewechselt: {choice}", "info")
+            self.add_to_chat("System", f"Model switched to: {choice}")
+            self.console_print(f"🤖 Model switched: {choice}", "info")
     
     def show_download_dialog(self):
-        """Zeigt Dialog zum Modell-Download"""
+        """Zeigt Dialog zum Model-Download"""
         dialog = ctk.CTkInputDialog(
-            text="Geben Sie den Modellnamen ein (z.B. llama2, mistral, codellama):",
-            title="Modell herunterladen"
+            text="Geben You den Modellnamen ein (z.B. llama2, mistral, codellama):",
+            title="Model herunterladen"
         )
         model_name = dialog.get_input()
         
@@ -3087,19 +3097,19 @@ class A1Terminal:
             self.download_model(model_name)
     
     def download_selected_model(self):
-        """Lädt das ausgewählte Modell aus dem Dropdown herunter"""
+        """Lädt das ausgewählte Model aus dem Dropdown herunter"""
         selected_model = self.available_dropdown.get_selected()
         
         if not selected_model:
-            messagebox.showwarning("Warnung", "Bitte wählen Sie ein Modell zum Download aus!")
+            messagebox.showwarning("Warning", "Please select a model to download!")
             return
         
-        # Prüfen ob das Modell bereits installiert ist
+        # Check ob das Model bereits installed ist
         installed_models = self.ollama.get_available_models()
         if selected_model in installed_models:
             result = messagebox.askyesno(
-                "Modell bereits vorhanden", 
-                f"'{selected_model}' ist bereits installiert. Trotzdem erneut herunterladen?"
+                "Model bereits vorhanden", 
+                f"'{selected_model}' ist bereits installed. Trotzdem erneut herunterladen?"
             )
             if not result:
                 return
@@ -3107,10 +3117,10 @@ class A1Terminal:
         self.download_model(selected_model)
     
     def download_model(self, model_name):
-        """Lädt ein Modell mit verbessertem UI-Feedback und Stop-Funktionalität herunter"""
+        """Lädt ein Model mit verbessertem UI-Feedback und Stop-Funktionalität herunter"""
         self.progress_frame.pack(fill="x", padx=10, pady=5)
-        self.add_to_chat("System", f"🚀 Download von {model_name} gestartet...")
-        self.add_to_chat("System", f"💡 Konsolen-Output für Details öffnen!")
+        self.add_to_chat("System", f"🚀 Download of {model_name} started...")
+        self.add_to_chat("System", f"💡 Open console output for details!")
         
         # Reset Download Stop Flag
         self.download_stopped = False
@@ -3173,31 +3183,31 @@ class A1Terminal:
                 self.progress_frame.pack_forget()
                 
                 if self.download_stopped:
-                    self.add_to_chat("System", f"🛑 Download von {model_name} gestoppt nach {total_time/60:.1f} Minuten")
+                    self.add_to_chat("System", f"🛑 Download von {model_name} stopped nach {total_time/60:.1f} Minuten")
                 elif success:
                     self.add_to_chat("System", f"✅ {model_name} erfolgreich heruntergeladen! ({total_time/60:.1f} Minuten)")
                     self.refresh_models()
                 else:
-                    self.add_to_chat("System", f"❌ Fehler beim Download von {model_name} nach {total_time/60:.1f} Minuten")
+                    self.add_to_chat("System", f"❌ Error beim Download von {model_name} nach {total_time/60:.1f} Minuten")
                 
                 # UI zurücksetzen
                 self.reset_download_ui()
             
             self.root.after(0, finish)
         
-        # Download-Thread starten und speichern
+        # Download-Thread start und save
         self.current_download_thread = threading.Thread(target=download, daemon=True)
         self.current_download_thread.start()
     
     def delete_selected_model(self):
-        """Löscht das ausgewählte Modell"""
+        """Löscht das ausgewählte Model"""
         if not self.current_model:
-            messagebox.showwarning("Warnung", "Kein Modell ausgewählt!")
+            messagebox.showwarning("Warning", "No model selected!")
             return
         
         result = messagebox.askyesno(
-            "Modell löschen", 
-            f"Möchten Sie '{self.current_model}' wirklich löschen?"
+            "Model delete", 
+            f"Möchten You '{self.current_model}' wirklich delete?"
         )
         
         if result:
@@ -3205,18 +3215,18 @@ class A1Terminal:
                 success = self.ollama.delete_model(self.current_model)
                 def finish():
                     if success:
-                        self.add_to_chat("System", f"✅ {self.current_model} wurde gelöscht")
+                        self.add_to_chat("System", f"✅ {self.current_model} wurde deleted")
                         self.current_model = None
                         self.refresh_models()
                     else:
-                        self.add_to_chat("System", f"❌ Fehler beim Löschen von {self.current_model}")
+                        self.add_to_chat("System", f"❌ Error beim Delete von {self.current_model}")
                 
                 self.root.after(0, finish)
             
             threading.Thread(target=delete, daemon=True).start()
     
     def send_message(self, event=None):
-        """Sendet eine Nachricht mit Stop-Funktionalität und Anti-Redundanz"""
+        """Sendet eine Message mit Stop-Funktionalität und Anti-Redundanz"""
         import time
         
         message = self.message_entry.get().strip()
@@ -3224,31 +3234,31 @@ class A1Terminal:
             return
         
         if not self.current_model:
-            messagebox.showwarning("Warnung", "Kein Modell ausgewählt!")
+            messagebox.showwarning("Warning", "No model selected!")
             return
         
         # Reset Stop-Flag
         self.generation_stopped = False
         
-        # Nachricht zur Historie hinzufügen (nur wenn nicht leer)
+        # Message zur Historie hinzufügen (nur wenn nicht leer)
         if message and message not in self.message_history:
             self.message_history.append(message)
         # Reset Historie-Index
         self.history_index = -1
         
 
-        # Prüfe, ob die Session vorher leer war (keine Nachrichten)
+        # Prüfe, ob die Session vorher leer war (keine Messages)
         session_empty = False
         if self.current_session_id and self.current_session_id in self.sessions:
             session_data = self.sessions[self.current_session_id]
             if not session_data.get("messages"):
                 session_empty = True
 
-        # Nachricht anzeigen
-        self.add_to_chat("Sie", message)
+        # Message show
+        self.add_to_chat("You", message)
         self.message_entry.delete(0, 'end')
 
-        # Wenn Session vorher leer war: Session-Liste, Anzeige und Chat-Konsole sofort aktualisieren
+        # Wenn Session vorher leer war: Session-List, Anzeige und Chat-Konsole sofort refresh
         if session_empty:
             self.update_session_list()
             self.update_current_session_display()
@@ -3275,24 +3285,24 @@ class A1Terminal:
                 session_bias = ""
                 if hasattr(self, 'current_session_bias') and self.current_session_bias:
                     session_bias = self.current_session_bias.strip()
-                    print(f"🎯 BIAS aktiv: {session_bias[:50]}...")
-                    self.root.after(0, lambda: self.console_print(f"🎯 BIAS mitgesendet: {session_bias[:30]}...", "info"))
+                    print(f"🎯 BIAS active: {session_bias[:50]}...")
+                    self.root.after(0, lambda: self.console_print(f"🎯 BIAS sent: {session_bias[:30]}...", "info"))
                 else:
-                    print("🎯 Kein BIAS gesetzt")
+                    print("🎯 No BIAS set")
                 
-                # Nur bei Session-Laden: volle History, sonst nur BIAS und aktuelle User-Eingabe
+                # Nur bei Session-Load: volle History, sonst nur BIAS und aktuelle User-Input
                 if getattr(self, '_session_just_loaded', False):
-                    print("[INFO] Es wird die komplette Session-History an das Modell geschickt (Session wurde gerade geladen).")
+                    print("[INFO] Complete session history is being sent to the model (session was just loaded).")
                     modified_history = self.chat_history.copy()
                     if session_bias:
                         modified_history.insert(0, {"role": "system", "content": session_bias})
                     self._session_just_loaded = False
                 else:
-                    # Nur BIAS (falls gesetzt) und aktuelle User-Eingabe
+                    # Nur BIAS (falls gesetzt) und aktuelle User-Input
                     modified_history = []
                     if session_bias:
                         modified_history.append({"role": "system", "content": session_bias})
-                # Letzte Model-Eingabe für Debug-Zwecke speichern
+                # Letzte Model-Input für Debug-Zwecke save
                 try:
                     history_copy = copy.deepcopy(modified_history)
                 except Exception:
@@ -3311,7 +3321,7 @@ class A1Terminal:
                     for chunk in response_stream:
                         # Stop-Check
                         if self.generation_stopped:
-                            self.root.after(0, lambda: self.add_to_chat("System", "🛑 Generation gestoppt"))
+                            self.root.after(0, lambda: self.add_to_chat("System", "🛑 Generation stopped"))
                             break
                             
                         if 'message' in chunk:
@@ -3326,48 +3336,48 @@ class A1Terminal:
                             formatted_content = self.format_ai_response(full_response)
                             self.add_to_chat(f"🤖 {self.current_model}", formatted_content)
                             
-                            # WICHTIG: Session SOFORT speichern nach AI-Antwort
-                            # Nicht warten auf auto_save_timer (200ms), sondern direkt speichern
+                            # WICHTIG: Session SOFORT save nach AI-Antwort
+                            # Nicht waiting auf auto_save_timer (200ms), sondern direkt save
                             if self.current_session_id and self.current_session_id in self.sessions:
                                 if self.save_current_session():
-                                    self.console_print(f"💾 Session nach AI-Antwort gespeichert", "success")
+                                    self.console_print(f"💾 Session saved", "success")
                         
                         self.root.after(0, show_final_response)
                         
-                        # Chat-Historie aktualisieren (ohne BIAS für permanente Historie)
+                        # Chat-Historie refresh (ohne BIAS für permanente Historie)
                         self.chat_history.append({"role": "user", "content": message})
                         self.chat_history.append({"role": "assistant", "content": full_response})
                     else:
-                        print(f"⚠️ Leere Antwort: {len(full_response)} Zeichen")
+                        print(f"⚠️ Empty response: {len(full_response)} characters")
                 else:
-                    print("❌ Kein Response-Stream erhalten")
+                    print("❌ No response stream received")
                     
             except Exception as e:
                 if not self.generation_stopped:
-                    self.root.after(0, lambda: self.add_to_chat("System", f"❌ Fehler: {str(e)}"))
+                    self.root.after(0, lambda: self.add_to_chat("System", f"❌ Error: {str(e)}"))
             finally:
                 # UI zurücksetzen
                 self.root.after(0, self.reset_generation_ui)
         
-        # Thread starten und speichern
+        # Thread start und save
         self.current_generation_thread = threading.Thread(target=get_response, daemon=True)
         self.current_generation_thread.start()
     
     def send_message_programmatic(self, message):
-        """Sendet eine Nachricht programmatisch (z.B. aus Textbox statt Entry)"""
+        """Sendet eine Message programmatisch (z.B. aus Textbox statt Entry)"""
         if not message or not message.strip():
             return
         
         message = message.strip()
         
         if not self.current_model:
-            messagebox.showwarning("Warnung", "Kein Modell ausgewählt!")
+            messagebox.showwarning("Warning", "No model selected!")
             return
         
         # Reset Stop-Flag
         self.generation_stopped = False
         
-        # Nachricht zur Historie hinzufügen
+        # Message zur Historie hinzufügen
         if message and message not in self.message_history:
             self.message_history.append(message)
         self.history_index = -1
@@ -3379,10 +3389,10 @@ class A1Terminal:
             if not session_data.get("messages"):
                 session_empty = True
         
-        # Nachricht anzeigen
-        self.add_to_chat("Sie", message)
+        # Message show
+        self.add_to_chat("You", message)
         
-        # Session-Liste aktualisieren wenn vorher leer
+        # Session-List refresh wenn vorher leer
         if session_empty:
             self.update_session_list()
             self.update_current_session_display()
@@ -3415,7 +3425,7 @@ class A1Terminal:
                         {"role": "system", "content": session_bias}
                     ] + modified_history
                 
-                # Nachricht zur Chat-History hinzufügen
+                # Message zur Chat-History hinzufügen
                 self.chat_history.append({"role": "user", "content": message})
                 modified_history.append({"role": "user", "content": message})
                 
@@ -3437,26 +3447,26 @@ class A1Terminal:
                     
             except Exception as e:
                 if not self.generation_stopped:
-                    self.root.after(0, lambda: self.add_to_chat("System", f"❌ Fehler: {str(e)}"))
+                    self.root.after(0, lambda: self.add_to_chat("System", f"❌ Error: {str(e)}"))
             finally:
                 self.root.after(0, self.reset_generation_ui)
         
-        # Thread starten
+        # Thread start
         self.current_generation_thread = threading.Thread(target=get_response, daemon=True)
         self.current_generation_thread.start()
     
     def download_model_by_name(self, model_name):
-        """Lädt ein Modell nach Namen herunter"""
+        """Lädt ein Model nach Namen herunter"""
         if not model_name or not model_name.strip():
-            messagebox.showwarning("Warnung", "Bitte geben Sie einen Modellnamen ein!")
+            messagebox.showwarning("Warning", "Please enter a model name!")
             return
         
         model_name = model_name.strip()
         
-        # Prüfe ob Modell bereits existiert
+        # Prüfe ob Model bereits existiert
         existing_models = self.ollama.list_models()
         if model_name in existing_models:
-            messagebox.showinfo("Info", f"Modell '{model_name}' ist bereits installiert!")
+            messagebox.showinfo("Info", f"Model '{model_name}' ist bereits installed!")
             return
         
         # Reset Download-Stop-Flag
@@ -3464,15 +3474,15 @@ class A1Terminal:
         
         def download():
             try:
-                self.console_print(f"📥 Download gestartet: {model_name}", "info")
+                self.console_print(f"📥 Download started: {model_name}", "info")
                 
                 # Download mit Progress
                 for progress in self.ollama.download_model_stream(model_name):
                     if self.download_stopped:
-                        self.console_print(f"⏹️ Download abgebrochen: {model_name}", "warning")
+                        self.console_print(f"⏹️ Download canceled: {model_name}", "warning")
                         break
                     
-                    # Progress anzeigen
+                    # Progress show
                     if "status" in progress:
                         status = progress["status"]
                         if "total" in progress and "completed" in progress:
@@ -3485,20 +3495,20 @@ class A1Terminal:
                 
                 if not self.download_stopped:
                     self.console_print(f"✅ Download abgeschlossen: {model_name}", "success")
-                    # Modell-Liste aktualisieren
+                    # Model-List refresh
                     self.root.after(0, self.refresh_models)
                     
             except Exception as e:
-                self.console_print(f"❌ Download-Fehler: {str(e)}", "error")
+                self.console_print(f"❌ Download-Error: {str(e)}", "error")
         
-        # Thread starten
+        # Thread start
         self.current_download_thread = threading.Thread(target=download, daemon=True)
         self.current_download_thread.start()
     
     def export_session_markdown(self):
-        """Exportiert die aktuelle Session als Markdown-Datei"""
+        """Exportiert die aktuelle Session als Markdown-File"""
         if not self.current_session_id:
-            messagebox.showwarning("Warnung", "Keine aktive Session zum Exportieren!")
+            messagebox.showwarning("Warning", "No active session to export!")
             return
         
         # Session-Daten holen
@@ -3510,7 +3520,7 @@ class A1Terminal:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         default_name = f"session_{self.current_session_id}_{timestamp}.md"
         
-        # Datei-Dialog
+        # File-Dialog
         filepath = filedialog.asksaveasfilename(
             defaultextension=".md",
             filetypes=[("Markdown", "*.md"), ("Alle Dateien", "*.*")],
@@ -3533,13 +3543,13 @@ class A1Terminal:
                 
                 f.write("---\n\n")
                 
-                # Nachrichten
+                # Messages
                 for msg in session.get('messages', []):
                     role = msg.get('role', 'unknown')
                     content = msg.get('content', '')
                     
                     if role == 'user':
-                        f.write(f"## 👤 Sie\n\n{content}\n\n")
+                        f.write(f"## 👤 You\n\n{content}\n\n")
                     elif role == 'assistant':
                         f.write(f"## 🤖 AI ({session.get('model', 'Unknown')})\n\n{content}\n\n")
                     elif role == 'system':
@@ -3547,15 +3557,15 @@ class A1Terminal:
                     
                     f.write("---\n\n")
             
-            messagebox.showinfo("Erfolg", f"Session exportiert nach:\n{filepath}")
+            messagebox.showinfo("Success", f"Session exported to:\n{filepath}")
             
         except Exception as e:
-            messagebox.showerror("Fehler", f"Export fehlgeschlagen:\n{str(e)}")
+            messagebox.showerror("Error", f"Export failed:\n{str(e)}")
     
     def export_session_json(self):
-        """Exportiert die aktuelle Session als JSON-Datei"""
+        """Exportiert die aktuelle Session als JSON-File"""
         if not self.current_session_id:
-            messagebox.showwarning("Warnung", "Keine aktive Session zum Exportieren!")
+            messagebox.showwarning("Warning", "No active session to export!")
             return
         
         # Session-Daten holen
@@ -3567,7 +3577,7 @@ class A1Terminal:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         default_name = f"session_{self.current_session_id}_{timestamp}.json"
         
-        # Datei-Dialog
+        # File-Dialog
         filepath = filedialog.asksaveasfilename(
             defaultextension=".json",
             filetypes=[("JSON", "*.json"), ("Alle Dateien", "*.*")],
@@ -3581,13 +3591,13 @@ class A1Terminal:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(session, f, indent=2, ensure_ascii=False)
             
-            messagebox.showinfo("Erfolg", f"Session exportiert nach:\n{filepath}")
+            messagebox.showinfo("Success", f"Session exported to:\n{filepath}")
             
         except Exception as e:
-            messagebox.showerror("Fehler", f"Export fehlgeschlagen:\n{str(e)}")
+            messagebox.showerror("Error", f"Export failed:\n{str(e)}")
     
     def navigate_history_up(self, event=None):
-        """Navigiert in der Nachrichten-Historie nach oben (ältere Nachrichten)"""
+        """Navigiert in der Messages-Historie nach oben (ältere Messages)"""
         if not self.message_history:
             return "break"  # Verhindert Standard-Verhalten
         
@@ -3597,7 +3607,7 @@ class A1Terminal:
         else:
             self.history_index -= 1
         
-        # Setze die Nachricht ins Eingabefeld
+        # Setze die Message ins Eingabefeld
         message = self.message_history[self.history_index]
         self.message_entry.delete(0, 'end')
         self.message_entry.insert(0, message)
@@ -3605,18 +3615,18 @@ class A1Terminal:
         return "break"  # Verhindert Standard-Verhalten der Pfeiltaste
     
     def navigate_history_down(self, event=None):
-        """Navigiert in der Nachrichten-Historie nach unten (neuere Nachrichten)"""
+        """Navigiert in der Messages-Historie nach unten (neuere Messages)"""
         if not self.message_history:
             return "break"
         
         # Wenn wir am Anfang der Historie sind oder keine Auswahl haben
         if self.history_index < 0 or self.history_index >= len(self.message_history) - 1:
-            # Lösche das Eingabefeld (neueste "Nachricht" ist leeres Feld)
+            # Lösche das Eingabefeld (neueste "Message" ist leeres Feld)
             self.message_entry.delete(0, 'end')
             self.history_index = -1
         else:
             self.history_index += 1
-            # Setze die Nachricht ins Eingabefeld
+            # Setze die Message ins Eingabefeld
             message = self.message_history[self.history_index]
             self.message_entry.delete(0, 'end')
             self.message_entry.insert(0, message)
@@ -3624,30 +3634,30 @@ class A1Terminal:
         return "break"  # Verhindert Standard-Verhalten der Pfeiltaste
     
     def on_key_press(self, event=None):
-        """Wird bei jeder Tasteneingabe aufgerufen - reset Historie-Index wenn getippt wird"""
+        """Is being bei jeder Tasteneingabe aufgerufen - reset Historie-Index wenn getippt is being"""
         # Reset Historie-Index wenn der Benutzer tippt (außer bei Pfeiltasten)
         if event and event.keysym not in ['Up', 'Down']:
             self.history_index = -1
-        return None  # Normale Tastatureingabe fortsetzen
+        return None  # Normale Tastatureingabe continue
     
     def stop_generation(self):
         """Stoppt die aktuelle Generation oder den Download sofort"""
         if self.current_generation_thread is not None:
-            # Stoppe Chat-Generation
+            # Stop chat generation
             self.generation_stopped = True
             self.reset_generation_ui()
-            print("\n🛑 Generation gestoppt durch Benutzer")
+            print("\n🛑 Generation stopped by user")
         
         if self.current_download_thread is not None:
-            # Stoppe Download
+            # Stop download
             self.download_stopped = True
             self.reset_download_ui()
-            print("\n🛑 Download gestoppt durch Benutzer")
+            print("\n🛑 Download stopped by user")
     
     def reset_generation_ui(self):
-        """Setzt die UI nach Generation zurück"""
+        """Setzt die UI nach Generation back"""
         self.stop_btn.configure(state="disabled", text="Stop")
-        self.send_btn.configure(state="normal", text="Senden")
+        self.send_btn.configure(state="normal", text="Send")
         
         # Eingabefeld wieder aktivieren
         if hasattr(self, 'message_entry'):
@@ -3656,9 +3666,9 @@ class A1Terminal:
         self.current_generation_thread = None
     
     def reset_download_ui(self):
-        """Setzt die UI nach Download zurück"""
+        """Setzt die UI nach Download back"""
         self.stop_btn.configure(state="disabled", text="Stop")
-        self.send_btn.configure(state="normal", text="Senden")
+        self.send_btn.configure(state="normal", text="Send")
         
         # Eingabefeld wieder aktivieren
         if hasattr(self, 'message_entry'):
@@ -3683,7 +3693,7 @@ class A1Terminal:
             # Erkenne Listen (nummeriert oder mit Bulletpoints)
             lines = paragraph.split('\n')
             if len(lines) > 1:
-                # Prüfe ob es eine Liste ist
+                # Prüfe ob es eine List ist
                 is_numbered_list = any(line.strip() and line.strip()[0].isdigit() and '.' in line[:5] for line in lines)
                 is_bullet_list = any(line.strip().startswith(('-', '*', '•')) for line in lines)
                 
@@ -3701,16 +3711,16 @@ class A1Terminal:
         return '\n\n'.join(formatted_paragraphs)
     
     def count_chat_messages(self):
-        """Zählt nur echte Chat-Nachrichten (User + AI, keine System-Nachrichten)"""
+        """Zählt nur echte Chat-Messages (User + AI, keine System-Messages)"""
         return len([bubble for bubble in self.chat_bubbles if bubble.sender != "System"])
     
     def add_to_chat(self, sender, message):
         """Fügt eine Chat-Bubble zum Chat hinzu"""
         timestamp = datetime.now().strftime("%H:%M:%S")
         
-        # System-Nachrichten ausblenden wenn Flag gesetzt ist
+        # System-Messages ausblenden wenn Flag gesetzt ist
         if sender == "System" and not self.config.get("show_system_messages", True):
-            # System-Nachricht wird trotzdem in der Session gespeichert für spätere Verwendung
+            # System-Message is being trotzdem in der Session saved für spätere Verwendung
             if self.current_session_id and self.current_session_id in self.sessions:
                 msg_data = {
                     "timestamp": timestamp,
@@ -3720,19 +3730,19 @@ class A1Terminal:
                 self.sessions[self.current_session_id]["messages"].append(msg_data)
                 self.sessions[self.current_session_id]["last_modified"] = datetime.now().isoformat()
                 self.auto_save_session()
-            return None  # Keine UI-Bubble erstellen
+            return None  # Keine UI-Bubble create
         
-        # Erstelle automatisch eine Session falls keine aktiv ist
+        # Erstelle automatic eine Session falls keine active ist
         if not self.current_session_id or self.current_session_id not in self.sessions:
             self.console_print("🔄 Keine aktive Session gefunden, erstelle neue Session", "info")
             self.create_new_session()
         
         # Prüfe nochmals ob Session existiert (Sicherheitscheck)
         if not self.current_session_id or self.current_session_id not in self.sessions:
-            self.console_print("❌ Fehler: Konnte keine Session erstellen!", "error")
+            self.console_print("❌ Error: Konnte keine Session create!", "error")
             return
         
-        # Prüfe ob die letzte Bubble eine System-Nachricht ist und diese erweitert werden kann
+        # Prüfe ob die letzte Bubble eine System-Message ist und diese erweitert werden kann
         if (sender == "System" and 
             self.chat_bubbles and 
             self.chat_bubbles[-1].sender == "System"):
@@ -3761,7 +3771,7 @@ class A1Terminal:
                 self.chat_display_frame._parent_canvas.after(100, 
                     lambda: self.chat_display_frame._parent_canvas.yview_moveto(1.0))
             
-            # Auto-Save für aktualisierte Nachricht
+            # Auto-Save für aktualisierte Message
             self.auto_save_session()
             
             return last_bubble
@@ -3775,10 +3785,10 @@ class A1Terminal:
             app_config=self.config
         )
         
-        # Füge Bubble zur Liste hinzu
+        # Füge Bubble zur List hinzu
         self.chat_bubbles.append(bubble)
         
-        # Füge Nachricht zur aktuellen Session hinzu
+        # Füge Message zur aktuellen Session hinzu
         if self.current_session_id and self.current_session_id in self.sessions:
             msg_data = {
                 "timestamp": timestamp,
@@ -3789,7 +3799,7 @@ class A1Terminal:
             self.sessions[self.current_session_id]["total_messages"] = self.count_chat_messages()
             self.sessions[self.current_session_id]["last_modified"] = datetime.now().isoformat()
             
-            # ✅ Automatisches Speichern nach jeder Nachricht
+            # ✅ Automatisches Save nach jeder Message
             self.auto_save_session()
         
         # Scrolle nach unten
@@ -3800,23 +3810,23 @@ class A1Terminal:
         return bubble
     
     def scroll_to_last_message(self):
-        """Scrollt zur letzten Nachricht in der Chat-Ansicht"""
+        """Scrollt zur letzten Message in der Chat-Ansicht"""
         try:
             if self.config.get("auto_scroll_chat", True):
                 if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
-                    # Zuerst das Layout vollständig aktualisieren
+                    # Zuerst das Layout vollständig refresh
                     self.chat_display_frame.update_idletasks()
                     self.chat_display_frame._parent_canvas.update_idletasks()
                     
-                    # Dann zur letzten Nachricht scrollen
+                    # Then scroll to last message
                     self.chat_display_frame._parent_canvas.yview_moveto(1.0)
                     
-                    # Nach kurzer Verzögerung nochmals scrollen für bessere Zuverlässigkeit
+                    # After short delay scroll again for better reliability
                     self.root.after(50, lambda: self.force_scroll_to_bottom())
                     
-                    self.console_print("📜 Zur letzten Nachricht gescrollt", "info")
+                    self.console_print("📜 Scrolled to last message", "info")
         except Exception as e:
-            self.console_print(f"❌ Fehler beim Scrollen zur letzten Nachricht: {e}", "error")
+            self.console_print(f"❌ Error scrolling to last message: {e}", "error")
     
     def force_scroll_to_bottom(self):
         """Erzwingt das Scrollen zum Ende der Chat-Ansicht"""
@@ -3830,14 +3840,14 @@ class A1Terminal:
                     # Zum Ende scrollen
                     self.chat_display_frame._parent_canvas.yview_moveto(1.0)
                     
-                    # Canvas-Größe neu berechnen
+                    # Canvas-Größe new berechnen
                     self.chat_display_frame._parent_canvas.configure(scrollregion=self.chat_display_frame._parent_canvas.bbox("all"))
                     
                     # Nochmals zum Ende
                     self.chat_display_frame._parent_canvas.yview_moveto(1.0)
                 
         except Exception as e:
-            self.console_print(f"❌ Fehler beim erzwungenen Scrollen: {e}", "error")
+            self.console_print(f"❌ Error beim erzwungenen Scrollen: {e}", "error")
     
     def add_thinking_indicator(self):
         """Zeigt dezenten Denkprozess-Indikator an"""
@@ -3876,7 +3886,7 @@ class A1Terminal:
                 pass
     
     def remove_last_message(self):
-        """Entfernt die letzte Nachricht (Thinking-Indikator)"""
+        """Entfernt die letzte Message (Thinking-Indikator)"""
         # Stoppe die ASCII-Animation
         self._thinking_animation_running = False
         if hasattr(self, 'current_thinking_bubble') and self.current_thinking_bubble:
@@ -3888,7 +3898,7 @@ class A1Terminal:
                 # WICHTIG: Entferne auch aus der Session-Daten
                 if self.current_session_id and self.current_session_id in self.sessions:
                     messages = self.sessions[self.current_session_id].get("messages", [])
-                    # Entferne die letzte Nachricht wenn sie der Thinking-Indikator ist
+                    # Entferne die letzte Message wenn sie der Thinking-Indikator ist
                     if messages and "Verarbeitet Ihre Anfrage" in messages[-1].get("message", ""):
                         messages.pop()
                         self.sessions[self.current_session_id]["last_modified"] = datetime.now().isoformat()
@@ -3899,7 +3909,7 @@ class A1Terminal:
     def export_session(self):
         """Exportiert die aktuelle Chat-Session"""
         if not self.chat_bubbles:
-            messagebox.showinfo("Export", "Keine Chat-Session zum Exportieren vorhanden!")
+            messagebox.showinfo("Export", "No chat session available to export!")
             return
         
         # Hauptdialog für Formatauswahl
@@ -3920,7 +3930,7 @@ class A1Terminal:
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
         
         # Titel
-        title_label = ctk.CTkLabel(main_frame, text="📄 Export-Format auswählen", 
+        title_label = ctk.CTkLabel(main_frame, text="📄 Select Export Format", 
                                   font=("Arial", 20, "bold"))
         title_label.pack(pady=(10, 20))
         
@@ -3932,7 +3942,7 @@ class A1Terminal:
         left_frame = ctk.CTkFrame(content_frame)
         left_frame.pack(side="left", fill="y", padx=(10, 5), pady=10)
         
-        ctk.CTkLabel(left_frame, text="Verfügbare Formate:", 
+        ctk.CTkLabel(left_frame, text="Available Formats:", 
                     font=("Arial", 14, "bold")).pack(pady=(10, 15))
         
         # Variable für Formatauswahl
@@ -3948,13 +3958,13 @@ class A1Terminal:
         def show_json_preview():
             self.selected_format = "json"
             self.update_preview(preview_frame, "json")
-            # Highlight aktiven Button  
+            # Highlight active button  
             json_btn.configure(fg_color="#1f538d", hover_color="#2966a3")
             markdown_btn.configure(fg_color="#4a4a4a", hover_color="#5a5a5a")
         
-        # Format-Buttons
+        # Format buttons
         markdown_btn = ctk.CTkButton(left_frame, 
-                                   text="📄 Markdown (.md)\n\n🧑‍💼 Menschenfreundlich\n📋 Formatiert & lesbar\n📚 Für Dokumentation",
+                                   text="📄 Markdown (.md)\n\n🧑‍💼 Human-friendly\n📋 Formatted & readable\n📚 For documentation",
                                    command=show_markdown_preview,
                                    width=220, height=90,
                                    font=("Arial", 11),
@@ -3962,7 +3972,7 @@ class A1Terminal:
         markdown_btn.pack(pady=10)
         
         json_btn = ctk.CTkButton(left_frame,
-                               text="📊 JSON (.json)\n\n🤖 Maschinenlesbar\n⚙️ Strukturierte Daten\n🔗 Für APIs & Tools", 
+                               text="📊 JSON (.json)\n\n🤖 Machine-readable\n⚙️ Structured data\n🔗 For APIs & Tools", 
                                command=show_json_preview,
                                width=220, height=90,
                                font=("Arial", 11),
@@ -3973,14 +3983,14 @@ class A1Terminal:
         right_frame = ctk.CTkFrame(content_frame)
         right_frame.pack(side="right", fill="both", expand=True, padx=(5, 10), pady=10)
         
-        ctk.CTkLabel(right_frame, text="Format-Vorschau:", 
+        ctk.CTkLabel(right_frame, text="Format Preview:", 
                     font=("Arial", 14, "bold")).pack(pady=(10, 10))
         
         # Vorschau-Frame
         preview_frame = ctk.CTkFrame(right_frame)
         preview_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Standard: Markdown-Vorschau anzeigen
+        # Standard: Markdown-Vorschau show
         show_markdown_preview()
         
         # Action-Buttons unten
@@ -3995,13 +4005,13 @@ class A1Terminal:
                 dialog.destroy()
                 self.export_to_json()
         
-        export_btn = ctk.CTkButton(button_frame, text="📤 Exportieren", 
+        export_btn = ctk.CTkButton(button_frame, text="📤 Export", 
                                  command=export_selected, 
                                  width=120, height=35,
                                  font=("Arial", 12, "bold"))
         export_btn.pack(side="right", padx=(10, 20), pady=10)
         
-        cancel_btn = ctk.CTkButton(button_frame, text="❌ Abbrechen", 
+        cancel_btn = ctk.CTkButton(button_frame, text="❌ Cancel", 
                                  command=dialog.destroy,
                                  width=100, height=35,
                                  fg_color="#666666", hover_color="#555555")
@@ -4009,7 +4019,7 @@ class A1Terminal:
 
     def update_preview(self, preview_frame, format_type):
         """Aktualisiert die Vorschau basierend auf dem gewählten Format"""
-        # Alle Widgets im Vorschau-Frame löschen
+        # Alle Widgets im Vorschau-Frame delete
         for widget in preview_frame.winfo_children():
             widget.destroy()
         
@@ -4024,11 +4034,11 @@ class A1Terminal:
         header_frame = ctk.CTkFrame(parent)
         header_frame.pack(fill="x", padx=10, pady=(10, 5))
         
-        ctk.CTkLabel(header_frame, text="📄 Markdown-Format", 
+        ctk.CTkLabel(header_frame, text="📄 Markdown Format", 
                     font=("Arial", 14, "bold")).pack(side="left", padx=10, pady=5)
         
         info_label = ctk.CTkLabel(header_frame, 
-                                text="✅ Menschenfreundlich  ✅ GitHub-kompatibel  ✅ Übersichtlich",
+                                text="✅ Human-friendly  ✅ GitHub-compatible  ✅ Clear",
                                 font=("Arial", 10),
                                 text_color="#00AA00")
         info_label.pack(side="right", padx=10, pady=5)
@@ -4038,8 +4048,8 @@ class A1Terminal:
 
 **Session-ID:** `20251107_143025`
 **Exportiert am:** 07.11.2025 um 14:30:25
-**Modell:** llama3.1:8b  
-**Anzahl Nachrichten:** 4
+**Model:** llama3.1:8b  
+**Anzahl Messages:** 4
 **Session-Start:** 14:25:12
 **Session-Ende:** 14:26:05
 
@@ -4093,7 +4103,7 @@ Kannst du ein einfaches Beispiel geben?
         header_frame = ctk.CTkFrame(parent)
         header_frame.pack(fill="x", padx=10, pady=(10, 5))
         
-        ctk.CTkLabel(header_frame, text="📊 JSON-Format", 
+        ctk.CTkLabel(header_frame, text="📊 JSON Format", 
                     font=("Arial", 14, "bold")).pack(side="left", padx=10, pady=5)
         
         info_label = ctk.CTkLabel(header_frame,
@@ -4135,7 +4145,7 @@ Kannst du ein einfaches Beispiel geben?
       "timestamp": "14:26:05",
       "role": "assistant", 
       "sender": "llama3.1:8b",
-      "content": "Stellen Sie sich vor, Sie bringen einem Kind bei..."
+      "content": "Stellen You sich vor, You bringen einem Kind bei..."
     }
   ]
 }"""
@@ -4151,12 +4161,12 @@ Kannst du ein einfaches Beispiel geben?
         text_widget.configure(state="disabled")
 
     def export_to_markdown(self):
-        """Exportiert die Chat-Session als Markdown-Datei"""
+        """Exportiert die Chat-Session als Markdown-File"""
         try:
-            # Session-ID mit Datum und Zeitstempel erstellen
+            # Session-ID mit Datum und Zeitstempel create
             session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
             
-            # Sessions-Ordner erstellen falls nicht vorhanden
+            # Sessions-Folder create falls nicht vorhanden
             sessions_dir = os.path.join(os.getcwd(), "sessions")
             if not os.path.exists(sessions_dir):
                 os.makedirs(sessions_dir)
@@ -4165,7 +4175,7 @@ Kannst du ein einfaches Beispiel geben?
             default_filename = f"session_{session_id}.md"
             default_path = os.path.join(sessions_dir, default_filename)
             
-            # Datei-Dialog mit Sessions-Ordner als Standard
+            # File-Dialog mit Sessions-Folder als Standard
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".md",
                 filetypes=[("Markdown files", "*.md"), ("All files", "*.*")],
@@ -4185,18 +4195,18 @@ Kannst du ein einfaches Beispiel geben?
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 
-                messagebox.showinfo("Export erfolgreich", 
+                messagebox.showinfo("Export successful", 
                                   f"Chat-Session wurde erfolgreich exportiert:\n{file_path}\n\nSession-ID: {session_id}")
         except Exception as e:
-            messagebox.showerror("Export-Fehler", f"Fehler beim Exportieren: {str(e)}")
+            messagebox.showerror("Export-Error", f"Error beim Exportieren: {str(e)}")
 
     def export_to_json(self):
-        """Exportiert die Chat-Session als JSON-Datei"""
+        """Exportiert die Chat-Session als JSON-File"""
         try:
-            # Session-ID mit Datum und Zeitstempel erstellen
+            # Session-ID mit Datum und Zeitstempel create
             session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
             
-            # Sessions-Ordner erstellen falls nicht vorhanden
+            # Sessions-Folder create falls nicht vorhanden
             sessions_dir = os.path.join(os.getcwd(), "sessions")
             if not os.path.exists(sessions_dir):
                 os.makedirs(sessions_dir)
@@ -4204,7 +4214,7 @@ Kannst du ein einfaches Beispiel geben?
             # Standard-Dateiname mit Session-ID
             default_filename = f"session_{session_id}.json"
             
-            # Datei-Dialog mit Sessions-Ordner als Standard
+            # File-Dialog mit Sessions-Folder als Standard
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".json",
                 filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
@@ -4257,10 +4267,10 @@ Kannst du ein einfaches Beispiel geben?
                 with open(file_path, 'w', encoding='utf-8') as f:
                     json.dump(chat_data, f, ensure_ascii=False, indent=2)
                 
-                messagebox.showinfo("Export erfolgreich", 
+                messagebox.showinfo("Export successful", 
                                   f"Chat-Session wurde erfolgreich exportiert:\n{file_path}\n\nSession-ID: {session_id}")
         except Exception as e:
-            messagebox.showerror("Export-Fehler", f"Fehler beim Exportieren: {str(e)}")
+            messagebox.showerror("Export-Error", f"Error beim Exportieren: {str(e)}")
 
     def _generate_markdown_content(self, session_id=None):
         """Generiert Markdown-Content für den Export"""
@@ -4275,8 +4285,8 @@ Kannst du ein einfaches Beispiel geben?
         lines.append("")
         lines.append(f"**Session-ID:** `{session_id}`")
         lines.append(f"**Exportiert am:** {datetime.now().strftime('%d.%m.%Y um %H:%M:%S')}")
-        lines.append(f"**Modell:** {getattr(self, 'current_model', 'Unbekannt')}")
-        lines.append(f"**Anzahl Nachrichten:** {self.count_chat_messages()}")
+        lines.append(f"**Model:** {getattr(self, 'current_model', 'Unbekannt')}")
+        lines.append(f"**Anzahl Messages:** {self.count_chat_messages()}")
         
         # Session-Zeitraum
         if self.chat_bubbles:
@@ -4289,7 +4299,7 @@ Kannst du ein einfaches Beispiel geben?
         lines.append("---")
         lines.append("")
         
-        # Chat-Nachrichten
+        # Chat-Messages
         for i, bubble in enumerate(self.chat_bubbles, 1):
             # Zeitstempel
             lines.append(f"**[{bubble.timestamp}]**")
@@ -4313,7 +4323,7 @@ Kannst du ein einfaches Beispiel geben?
             
             lines.append("")
             
-            # Trennlinie zwischen Nachrichten (außer bei der letzten)
+            # Trennlinie zwischen Messages (außer bei der letzten)
             if i < len(self.chat_bubbles):
                 lines.append("---")
                 lines.append("")
@@ -4327,44 +4337,44 @@ Kannst du ein einfaches Beispiel geben?
         return '\n'.join(lines)
     
     def setup_keyboard_shortcuts(self):
-        """Richtet Keyboard Shortcuts ein"""
-        # Ctrl+N - Neue Session
+        """Sets up keyboard shortcuts"""
+        # Ctrl+N - New Session
         self.root.bind("<Control-n>", lambda e: self.create_new_session())
         
-        # Ctrl+L - Chat leeren
+        # Ctrl+L - Clear chat
         self.root.bind("<Control-l>", lambda e: self.clear_current_chat())
         
         # Ctrl+E - Export
         self.root.bind("<Control-e>", lambda e: self.export_session_markdown())
         
-        # Ctrl+B - BIAS fokussieren
+        # Ctrl+B - Focus BIAS
         self.root.bind("<Control-b>", lambda e: self.session_bias_entry.focus() if hasattr(self, 'session_bias_entry') else None)
         
-        # Escape - Generation stoppen
+        # Escape - Stop generation
         self.root.bind("<Escape>", lambda e: self.stop_generation())
         
-        print("⌨️ Keyboard Shortcuts aktiviert:")
-        print("  Ctrl+N: Neue Session")
-        print("  Ctrl+L: Chat leeren")
+        print("⌨️ Keyboard shortcuts activated:")
+        print("  Ctrl+N: New Session")
+        print("  Ctrl+L: Clear chat")
         print("  Ctrl+E: Export")
-        print("  Ctrl+B: BIAS fokussieren")
-        print("  Escape: Generation stoppen")
+        print("  Ctrl+B: Focus BIAS")
+        print("  Escape: Stop generation")
     
     def clear_current_chat(self):
-        """Leert den aktuellen Chat"""
+        """Clears the current chat"""
         if not self.current_session_id:
             return
         
         response = messagebox.askyesno(
-            "Chat leeren",
-            "Möchten Sie den gesamten Chat-Verlauf dieser Session löschen?"
+            "Clear chat",
+            "Do you want to delete the entire chat history of this session?"
         )
         
         if response:
-            # Chat-History leeren
+            # Clear chat history
             self.chat_history = []
             
-            # Session aktualisieren
+            # Session refresh
             if self.current_session_id in self.sessions:
                 self.sessions[self.current_session_id]["messages"] = []
                 self.save_current_session()
@@ -4374,9 +4384,9 @@ Kannst du ein einfaches Beispiel geben?
                 bubble.destroy()
             self.chat_bubbles.clear()
             
-            # System-Nachricht
+            # System-Message
             self.add_to_chat("System", "✨ Chat wurde geleert")
     
     def run(self):
-        """Startet die Anwendung"""
+        """Starts the application"""
         self.root.mainloop()

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-A1 Terminal - Modulare Version
-Haupteinstiegspunkt
+A1 Terminal - Modular Version
+Main Entry Point
 """
 
 import customtkinter as ctk
 
-# Erscheinungsbild konfigurieren
+# Configure appearance
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 

@@ -36,7 +36,7 @@ class ModelSelector(ctk.CTkFrame):
         
         current_label = ctk.CTkLabel(
             current_frame,
-            text="Aktuelles Modell:",
+            text="Aktuelles Model:",
             font=("Arial", 10, "bold"),
             anchor="w"
         )
@@ -48,7 +48,7 @@ class ModelSelector(ctk.CTkFrame):
         
         self.model_dropdown = ctk.CTkComboBox(
             model_control,
-            values=["Kein Modell verfügbar"],
+            values=["Kein Model available"],
             command=self._on_model_change,
             font=("Arial", 10),
             dropdown_font=("Arial", 9),
@@ -93,7 +93,7 @@ class ModelSelector(ctk.CTkFrame):
         # Download Section
         download_label = ctk.CTkLabel(
             self,
-            text="⬇️ Neues Modell hinzufügen",
+            text="⬇️ Add new model",
             font=("Arial", 11, "bold"),
             anchor="w"
         )
@@ -173,7 +173,7 @@ class ModelSelector(ctk.CTkFrame):
         self.status_label.pack(padx=15, pady=(5, 10))
     
     def _on_model_change(self, choice):
-        """Model wurde geändert"""
+        """Model wurde changed"""
         if self.on_model_select:
             self.on_model_select(choice)
     
@@ -185,7 +185,7 @@ class ModelSelector(ctk.CTkFrame):
     def _on_delete(self):
         """Delete wurde geklickt"""
         current = self.model_dropdown.get()
-        if current and current != "Kein Modell verfügbar" and self.on_model_delete:
+        if current and current != "Kein Model available" and self.on_model_delete:
             self.on_model_delete(current)
     
     def _on_download(self):
@@ -206,11 +206,11 @@ class ModelSelector(ctk.CTkFrame):
             self.model_dropdown.configure(values=models)
             self.model_dropdown.set(models[0])
         else:
-            self.model_dropdown.configure(values=["Kein Modell verfügbar"])
-            self.model_dropdown.set("Kein Modell verfügbar")
+            self.model_dropdown.configure(values=["Kein Model available"])
+            self.model_dropdown.set("Kein Model available")
     
     def set_current_model(self, model):
-        """Setzt das aktuelle Modell"""
+        """Setzt das aktuelle Model"""
         if model:
             self.model_dropdown.set(model)
     

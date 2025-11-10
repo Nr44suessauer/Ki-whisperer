@@ -19,7 +19,7 @@ class EnhancedChatBubble(ctk.CTkFrame):
         self.on_regenerate = on_regenerate
         
         # Bestimme Bubble-Stil
-        if sender == "Sie":
+        if sender == "You":
             bubble_color = self.app_config.get("user_bg_color", "#2B8A3E")
             text_color = self.app_config.get("user_text_color", "white")
             font = self.app_config.get("user_font", "Arial")
@@ -87,7 +87,7 @@ class EnhancedChatBubble(ctk.CTkFrame):
         )
         self.copy_btn.pack(side="left", padx=2)
         
-        # Regenerate Button (nur für AI-Nachrichten)
+        # Regenerate Button (nur für AI-Messages)
         if not self.is_user and sender != "System" and self.on_regenerate:
             self.regen_btn = ctk.CTkButton(
                 self.action_frame,
@@ -120,7 +120,7 @@ class EnhancedChatBubble(ctk.CTkFrame):
         self.text_widget.insert("1.0", message)
         self.text_widget.configure(state="disabled")
         
-        # Nach dem Rendering: Passe Höhe automatisch an den gesamten Inhalt an
+        # Nach dem Rendering: Passe Höhe automatic an den gesamten Inhalt an
         self.after(10, self.adjust_height_to_content)
         
         # Hover-Effekte
@@ -158,7 +158,7 @@ class EnhancedChatBubble(ctk.CTkFrame):
             
             # Falls Breite noch nicht bekannt (Widget nicht gerendert), verwende Standardwert
             if textbox_width <= 1:
-                textbox_width = 600  # Schätzwert, wird beim nächsten Update korrigiert
+                textbox_width = 600  # Schätzwert, is being beim nächsten Update korrigiert
                 # Plane erneute Anpassung nach vollständigem Rendering
                 self.after(100, self.adjust_height_to_content)
             
@@ -198,12 +198,12 @@ class EnhancedChatBubble(ctk.CTkFrame):
             # Aktualisiere die Höhe der Textbox
             self.text_widget.configure(height=needed_height)
             
-            # Deaktiviere wieder
+            # Disable again
             self.text_widget.configure(state="disabled")
             
         except Exception as e:
-            print(f"Fehler bei automatischer Höhenanpassung: {e}")
-            # Bei Fehler: Deaktiviere trotzdem die Textbox
+            print(f"Error during automatic height adjustment: {e}")
+            # On error: Disable textbox anyway
             try:
                 self.text_widget.configure(state="disabled")
             except:
@@ -218,7 +218,7 @@ class EnhancedChatBubble(ctk.CTkFrame):
         self.action_frame.pack_forget()
     
     def _on_copy(self):
-        """Kopiere Nachricht in Zwischenablage"""
+        """Kopiere Message in Zwischenablage"""
         try:
             pyperclip.copy(self.message)
             # Kurzes Feedback

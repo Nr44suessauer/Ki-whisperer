@@ -47,7 +47,7 @@ class ColorWheel(tk.Frame):
         # Text in der Mitte
         self.canvas.create_text(
             self.center, self.center,
-            text="Weiß", fill="gray", font=("Arial", 9)
+            text="White", fill="gray", font=("Arial", 9)
         )
     
     def hsv_to_rgb(self, h, s, v):
@@ -108,11 +108,11 @@ class ColorWheel(tk.Frame):
         dy = y - self.center
         distance = math.sqrt(dx**2 + dy**2)
         
-        # Prüfen ob im Farbkreis oder im weißen Zentrum
+        # Check ob im Farbkreis oder im weißen Zentrum
         if distance > self.radius:
             return
         
-        # Weißer Bereich in der Mitte
+        # Whiteer Area in der Mitte
         if distance < 20:
             self.selected_color = "#FFFFFF"
             self.update_marker(self.center, self.center)
@@ -134,7 +134,7 @@ class ColorWheel(tk.Frame):
         rgb = self.hsv_to_rgb(angle, saturation, value)
         color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
         
-        # Farbe aktualisieren
+        # Farbe refresh
         self.selected_color = color
         self.update_marker(x, y)
         
@@ -168,7 +168,7 @@ class ColorWheel(tk.Frame):
             h, s, v = self.rgb_to_hsv(r, g, b)
             
             # Position berechnen
-            if s == 0:  # Graustufe - Zentrum
+            if s == 0:  # Graystufe - Zentrum
                 x, y = self.center, self.center
             else:
                 distance = 20 + s * (self.radius - 40)
@@ -190,5 +190,5 @@ class ColorWheel(tk.Frame):
         self.callback = callback
     
     def get_color(self):
-        """Gibt die aktuell ausgewählte Farbe zurück"""
+        """Gibt die aktuell ausgewählte Farbe back"""
         return self.selected_color
