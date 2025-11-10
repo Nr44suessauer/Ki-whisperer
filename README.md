@@ -1,146 +1,430 @@
-# A1-Terminal# A1-Terminal
+# A1-Terminal# A1-Terminal# A1-Terminal# A1-Terminal
 
 
 
-**Professioneller Chat-Client für lokale AI-Modelle via Ollama****Professioneller Chat-Client für lokale AI-Modelle via Ollama**
+**Professioneller Chat-Client für lokale AI-Modelle via Ollama**
 
 
 
-Version 2.0 - Modulare ArchitekturVersion 2.0 - Modulare Architektur
+Version 2.0 - Modulare Architektur**Professioneller Chat-Client für lokale AI-Modelle via Ollama**
 
 
 
----## 📁 Projektstruktur
+---
 
 
 
-## 📖 Dokumentation---
+## 🚀 Vollautomatische InstallationVersion 2.0 - Modulare Architektur**Professioneller Chat-Client für lokale AI-Modelle via Ollama****Professioneller Chat-Client für lokale AI-Modelle via Ollama**
 
 
 
-Die vollständige technische Dokumentation finden Sie hier:Das Projekt ist jetzt **modular** aufgebaut:
+### Ein Befehl - Alles installiert!
 
 
 
-**➡️ [DOKUMENTATION.md](./DOKUMENTATION.md)**## 📋 Inhaltsverzeichnis
+**Windows:**---
+
+```powershell
+
+# Als Administrator ausführen (Rechtsklick -> "Als Administrator ausführen")
+
+.\install.bat
+
+```## 📖 DokumentationVersion 2.0 - Modulare ArchitekturVersion 2.0 - Modulare Architektur
 
 
 
----```
+**Linux/macOS:**
 
+```bash
 
+chmod +x install.shDie vollständige technische Dokumentation finden Sie hier:
 
-## 🚀 Schnellstart1. [Überblick](#überblick)Ki-whisperer/
-
-
-
-### 1. Ollama installieren2. [System-Architektur](#system-architektur)├── a1_terminal_modular/     # ✨ NEUE MODULARE VERSION (empfohlen)
-
-Besuchen Sie [ollama.ai](https://ollama.ai) und installieren Sie Ollama.
-
-3. [Installation](#installation)│   ├── start.bat            # Einfach doppelklicken zum Starten!
-
-### 2. Dependencies installieren
-
-```powershell4. [Schnellstart](#schnellstart)│   ├── main.py
-
-cd a1_terminal_modular
-
-pip install -r requirements.txt5. [Modulare Struktur](#modulare-struktur)│   └── src/
+./install.sh
 
 ```
 
-6. [Technische Dokumentation](#technische-dokumentation)│       ├── ui/              # UI-Komponenten
 
-### 3. Starten
 
-```powershell7. [Features](#features)│       └── core/            # Kernlogik
-
-.\start.bat
-
-```8. [Konfiguration](#konfiguration)│
+### Was wird installiert?**➡️ [DOKUMENTATION.md](./DOKUMENTATION.md)**---## 📁 Projektstruktur
 
 
 
-oder9. [API-Referenz](#api-referenz)└── OLD_VERSION/             # Archivierte alte Version
+Das Skript installiert **vollautomatisch**:
+
+- ✅ Python 3.8+ (falls nicht vorhanden)
+
+- ✅ Alle Python-Pakete (CustomTkinter, ollama, PyYAML, requests, pyperclip)---
+
+- ✅ **Ollama** (komplett automatisch, **keine manuelle Installation nötig!**)
+
+- ✅ Test-Modell **tinyllama:1.1b** (~600 MB, sofort einsatzbereit)
 
 
 
-```powershell10. [Performance & Monitoring](#performance--monitoring)    └── llm_messenger.py     # Original monolithische Datei
+### Nach der Installation starten## 🚀 Schnellstart## 📖 Dokumentation---
 
-python main.py
+
+
+```powershell
+
+cd a1_terminal_modular
+
+.\start.bat          # Windows### Automatische Installation (Empfohlen)
+
+./start.sh           # Linux/macOS
+
+```
+
+
+
+**Fertig!** Die App startet mit einem funktionierenden Test-Modell. 🎉**Windows:**Die vollständige technische Dokumentation finden Sie hier:Das Projekt ist jetzt **modular** aufgebaut:
+
+
+
+---```powershell
+
+
+
+## ✨ Features# Als Administrator ausführen (Rechtsklick -> "Als Administrator ausführen")
+
+
+
+- 🎯 **Modulare Architektur** - Saubere Code-Struktur.\install.bat
+
+- 🚀 **Echtzeit-Streaming** - Live-Anzeige der AI-Antworten
+
+- 💾 **Session-Management** - Speichern & Laden von Chats```**➡️ [DOKUMENTATION.md](./DOKUMENTATION.md)**## 📋 Inhaltsverzeichnis
+
+- 🎨 **Vollständig anpassbar** - Farben, Fonts, Layout
+
+- 📊 **Model-Management** - Download & Kategorisierung von Modellen
+
+- 🔄 **100% Offline** - Alle Modelle laufen lokal, keine Cloud
+
+- ⚡ **Stop-Funktion** - Generierung jederzeit unterbrechbar**Linux/macOS:**
+
+- 📝 **BIAS-System** - System-Prompts für AI-Steuerung
+
+```bash
+
+---
+
+chmod +x install.sh---```
+
+## 📁 Projektstruktur
+
+./install.sh
+
+```
+
+Ki-whisperer/```
+
+├── install.bat                 # Windows-Installations-Script
+
+├── install.sh                  # Linux/macOS-Installations-Script
+
+├── DOKUMENTATION.md            # Vollständige technische Dokumentation
+
+├── README.md                   # Diese DateiDas Installationsskript installiert automatisch:## 🚀 Schnellstart1. [Überblick](#überblick)Ki-whisperer/
+
+│
+
+└── a1_terminal_modular/        # Hauptanwendung- ✅ Python 3.8+ (falls nicht vorhanden)
+
+    ├── start.bat               # Windows: Schnellstart
+
+    ├── start.sh                # Linux/macOS: Schnellstart- ✅ Alle Python-Pakete (CustomTkinter, ollama, etc.)
+
+    ├── main.py                 # Entry Point
+
+    ├── requirements.txt        # Python-Dependencies- ✅ Ollama
+
+    ├── a1_terminal_config.yaml # Konfiguration
+
+    │- ✅ Optional: Test-Modell (tinyllama, phi3, llama3.2)### 1. Ollama installieren2. [System-Architektur](#system-architektur)├── a1_terminal_modular/     # ✨ NEUE MODULARE VERSION (empfohlen)
+
+    ├── sessions/               # Gespeicherte Chat-Sessions
+
+    │
+
+    └── src/                    # Quellcode
+
+        ├── core/               # Kernlogik### Manuelle InstallationBesuchen Sie [ollama.ai](https://ollama.ai) und installieren Sie Ollama.
+
+        │   ├── a1_terminal.py      # Hauptklasse
+
+        │   └── ollama_manager.py   # Ollama API Client
+
+        │
+
+        └── ui/                 # UI-Komponenten<details>3. [Installation](#installation)│   ├── start.bat            # Einfach doppelklicken zum Starten!
+
+            ├── chat_bubble.py
+
+            ├── session_card.py<summary>Klicken um manuelle Installation anzuzeigen</summary>
+
+            ├── model_selector.py
+
+            └── ...### 2. Dependencies installieren
+
+```
+
+#### 1. Ollama installieren
+
+---
+
+Besuchen Sie [ollama.ai](https://ollama.ai) und installieren Sie Ollama.```powershell4. [Schnellstart](#schnellstart)│   ├── main.py
+
+## 📖 Dokumentation
+
+
+
+**[Vollständige technische Dokumentation (DOKUMENTATION.md)](./DOKUMENTATION.md)**
+
+#### 2. Dependencies installierencd a1_terminal_modular
+
+Enthält:
+
+- ⚙️ Detaillierte Architektur-Beschreibung```powershell
+
+- 📡 API-Referenz & Ollama-Integration
+
+- 🎨 Konfigurationsoptionencd a1_terminal_modularpip install -r requirements.txt5. [Modulare Struktur](#modulare-struktur)│   └── src/
+
+- 👨‍💻 Entwickler-Guide
+
+- 🐛 Troubleshooting & Problemlösungpip install -r requirements.txt
+
+
+
+---``````
+
+
+
+## 💡 Empfohlene Modelle
+
+
+
+Nach der Installation ist **tinyllama:1.1b** bereits installiert. Weitere Modelle können Sie im "Models"-Tab der App herunterladen:#### 3. Starten6. [Technische Dokumentation](#technische-dokumentation)│       ├── ui/              # UI-Komponenten
+
+
+
+| Modell | Größe | RAM | Beschreibung |```powershell
+
+|--------|-------|-----|--------------|
+
+| **tinyllama:1.1b** | 600 MB | 4 GB | ✅ Bereits installiert! Sehr schnell |.\start.bat### 3. Starten
+
+| phi3:mini | 2 GB | 8 GB | Gute Qualität, ausgewogen |
+
+| llama3.2:3b | 2 GB | 8 GB | Neueste Version, sehr gut |```
+
+| mistral:7b | 4 GB | 12 GB | Hohe Qualität |
+
+| codellama:7b | 4 GB | 12 GB | Spezialisiert auf Code |```powershell7. [Features](#features)│       └── core/            # Kernlogik
+
+
+
+---oder
+
+
+
+## 🔧 Systemanforderungen.\start.bat
+
+
+
+**Minimum:**```powershell
+
+- Windows 10/11, Linux (Ubuntu 20.04+), macOS 11+
+
+- 8 GB RAMpython main.py```8. [Konfiguration](#konfiguration)│
+
+- 10 GB freier Speicher
+
+- Internetverbindung (nur für Installation)```
+
+
+
+**Empfohlen:**
+
+- 16 GB RAM (für größere Modelle)
+
+- 50 GB freier Speicher (für mehrere Modelle)</details>
+
+
+
+---oder9. [API-Referenz](#api-referenz)└── OLD_VERSION/             # Archivierte alte Version
+
+
+
+## 🤝 Support### Nach der Installation
+
+
+
+Bei Problemen siehe:
+
+- 📖 [Troubleshooting in der Dokumentation](./DOKUMENTATION.md#troubleshooting)
+
+- 🐛 [GitHub Issues](https://github.com/Nr44suessauer/Ki-whisperer/issues)**Windows:**
+
+
+
+---```powershell```powershell10. [Performance & Monitoring](#performance--monitoring)    └── llm_messenger.py     # Original monolithische Datei
+
+
+
+**Viel Spaß mit A1-Terminal! 🚀**cd a1_terminal_modular
+
+
+
+*Komplett automatische Installation • Keine manuelle Konfiguration • Sofort einsatzbereit*.\start.batpython main.py
+
+
+```
 
 ```11. [Troubleshooting](#troubleshooting)```
 
+**Linux/macOS:**
+
+```bash
+
+cd a1_terminal_modular
+
+./start.sh---
+
+```
+
 
 
 ---
-
-
 
 ## ✨ Features---## Installation
 
-
-
-- 🎯 Modulare Architektur
-
-- 🚀 Echtzeit-Streaming
-
-- 💾 Session-Management## Überblick1. **Repository klonen oder herunterladen**
-
-- 🎨 Vollständig anpassbar
-
-- 📊 Model-Management   ```bash
-
-- 🔄 Offline-fähig
-
-**A1-Terminal** ist ein moderner, modularer Chat-Client für lokale AI-Modelle, der über die Ollama-API kommuniziert. Die Anwendung bietet eine intuitive GUI mit umfangreichen Anpassungsmöglichkeiten, Session-Management und Echtzeit-Streaming-Funktionalität.   cd "C:\Users\marcn\Documents\Ki-whisperer"
-
----
-
-   ```
-
-Weitere Informationen, API-Referenz, Troubleshooting und mehr in der **[vollständigen Dokumentation](./DOKUMENTATION.md)**.
-
-### Hauptmerkmale
-
-2. **Abhängigkeiten installieren**
-
-- 🎯 **Modular & Wartbar** - Saubere Architektur mit klarer Trennung   ```bash
-
-- 🚀 **Echtzeit-Streaming** - Live-Anzeige der AI-Antworten   cd a1_terminal_modular
-
-- 💾 **Session-Management** - Persistente Chat-Sitzungen   pip install -r requirements.txt
-
-- 🎨 **Vollständig anpassbar** - Farben, Fonts, Layout   ```
-
-- 📊 **Monitoring** - Performance- und Nutzungsstatistiken
-
-- 🔄 **Model-Management** - Download, Auswahl, Kategorisierung## 🚀 Verwendung (Neue Version)
+## ✨ Features
 
 
 
-### Technologie-Stack1. **Ollama starten** (falls noch nicht gestartet)
+- 🎯 **Modulare Architektur** - Saubere Trennung von UI und Logik
 
-   ```bash
+- 🚀 **Echtzeit-Streaming** - Live-Anzeige der AI-Antworten- 🎯 Modulare Architektur
 
-```   ollama serve
+- 💾 **Session-Management** - Persistente Chat-Sitzungen
 
-┌─────────────────────────────────────────┐   ```
+- 🎨 **Vollständig anpassbar** - Farben, Fonts, Layout- 🚀 Echtzeit-Streaming
 
-│         CustomTkinter (GUI)             │
+- 📊 **Model-Management** - Download & Kategorisierung
 
-├─────────────────────────────────────────┤2. **A1 Terminal starten**
+- 🔄 **Offline-fähig** - Alle Modelle laufen lokal- 💾 Session-Management## Überblick1. **Repository klonen oder herunterladen**
 
-│   A1 Terminal Core Application          │   ```bash
+- ⚡ **Stop-Funktionalität** - Generierung jederzeit stoppbar
 
-├──────────────┬──────────────────────────┤   cd a1_terminal_modular
+- 📝 **BIAS-System** - System-Prompts für AI-Steuerung- 🎨 Vollständig anpassbar
 
-│ UI-Module    │  Ollama Manager          │   start.bat
 
-│              │  (API-Client)            │   ```
 
-├──────────────┴──────────────────────────┤   
+---- 📊 Model-Management   ```bash
+
+
+
+## 📁 Projektstruktur- 🔄 Offline-fähig
+
+
+
+```**A1-Terminal** ist ein moderner, modularer Chat-Client für lokale AI-Modelle, der über die Ollama-API kommuniziert. Die Anwendung bietet eine intuitive GUI mit umfangreichen Anpassungsmöglichkeiten, Session-Management und Echtzeit-Streaming-Funktionalität.   cd "C:\Users\marcn\Documents\Ki-whisperer"
+
+Ki-whisperer/
+
+├── install.bat                 # 🆕 Windows-Installationsskript---
+
+├── install.sh                  # 🆕 Linux/macOS-Installationsskript
+
+├── DOKUMENTATION.md            # 📖 Vollständige technische Doku   ```
+
+├── README.md                   # 📄 Diese Datei
+
+│Weitere Informationen, API-Referenz, Troubleshooting und mehr in der **[vollständigen Dokumentation](./DOKUMENTATION.md)**.
+
+└── a1_terminal_modular/        # ✨ Hauptanwendung
+
+    ├── start.bat               # Windows: Schnellstart### Hauptmerkmale
+
+    ├── start.sh                # Linux/macOS: Schnellstart
+
+    ├── main.py                 # Entry Point2. **Abhängigkeiten installieren**
+
+    ├── requirements.txt        # Python-Dependencies
+
+    ├── a1_terminal_config.yaml # Konfiguration- 🎯 **Modular & Wartbar** - Saubere Architektur mit klarer Trennung   ```bash
+
+    │
+
+    ├── sessions/               # Gespeicherte Chat-Sessions- 🚀 **Echtzeit-Streaming** - Live-Anzeige der AI-Antworten   cd a1_terminal_modular
+
+    │
+
+    └── src/                    # Quellcode- 💾 **Session-Management** - Persistente Chat-Sitzungen   pip install -r requirements.txt
+
+        ├── core/               # Kernlogik
+
+        │   ├── a1_terminal.py- 🎨 **Vollständig anpassbar** - Farben, Fonts, Layout   ```
+
+        │   └── ollama_manager.py
+
+        │- 📊 **Monitoring** - Performance- und Nutzungsstatistiken
+
+        └── ui/                 # UI-Komponenten
+
+            ├── chat_bubble.py- 🔄 **Model-Management** - Download, Auswahl, Kategorisierung## 🚀 Verwendung (Neue Version)
+
+            ├── session_card.py
+
+            ├── model_selector.py
+
+            └── ...
+
+```### Technologie-Stack1. **Ollama starten** (falls noch nicht gestartet)
+
+
+
+---   ```bash
+
+
+
+## 📚 Weitere Informationen```   ollama serve
+
+
+
+Alle Details zu Architektur, API-Referenz, Konfiguration, Entwicklung und Troubleshooting finden Sie in der:┌─────────────────────────────────────────┐   ```
+
+
+
+**[📖 Vollständigen Dokumentation (DOKUMENTATION.md)](./DOKUMENTATION.md)**│         CustomTkinter (GUI)             │
+
+
+
+---├─────────────────────────────────────────┤2. **A1 Terminal starten**
+
+
+
+## 🤝 Unterstützung│   A1 Terminal Core Application          │   ```bash
+
+
+
+Bei Fragen oder Problemen:├──────────────┬──────────────────────────┤   cd a1_terminal_modular
+
+- Siehe [Troubleshooting in der Dokumentation](./DOKUMENTATION.md#troubleshooting)
+
+- Erstellen Sie ein Issue im GitHub Repository│ UI-Module    │  Ollama Manager          │   start.bat
+
+
+
+---│              │  (API-Client)            │   ```
+
+
+
+**Viel Spaß mit A1-Terminal! 🚀**├──────────────┴──────────────────────────┤   
+
 
 │         Ollama API (localhost:11434)    │   Oder direkt:
 

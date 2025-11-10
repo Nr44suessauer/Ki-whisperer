@@ -86,45 +86,78 @@
 
 ## Installation
 
-### 1. Ollama installieren
+### Vollautomatische Installation (Empfohlen)
 
-Besuchen Sie [ollama.ai](https://ollama.ai) und installieren Sie Ollama für Ihr Betriebssystem.
+Das Projekt enthält Installationsskripte, die **ALLE Dependencies vollautomatisch** installieren - ideal für blanke Systeme. **Keine manuelle Installation von Ollama nötig!**
 
-**Verifizierung:**
-```powershell
-ollama --version
-```
+#### Windows
 
-### 2. Repository klonen
-
+1. **Repository klonen oder herunterladen**
 ```powershell
 cd "C:\Users\<Benutzername>\Documents"
 git clone https://github.com/Nr44suessauer/Ki-whisperer.git
-cd Ki-whisperer\a1_terminal_modular
+cd Ki-whisperer
 ```
 
-### 3. Abhängigkeiten installieren
-
+2. **Installationsskript ausführen (als Administrator)**
 ```powershell
-pip install -r requirements.txt
+# Rechtsklick auf install.bat -> "Als Administrator ausführen"
+# Oder in PowerShell als Admin:
+.\install.bat
 ```
 
-**requirements.txt:**
-```
-customtkinter>=5.2.0
-ollama>=0.1.0
-PyYAML>=6.0
-requests>=2.31.0
-pyperclip>=1.8.2
+**Das Skript installiert vollautomatisch:**
+- ✅ Python 3.11 (falls nicht installiert)
+- ✅ pip (Python Package Manager)
+- ✅ CustomTkinter >= 5.2.0
+- ✅ ollama >= 0.1.0
+- ✅ PyYAML >= 6.0
+- ✅ requests >= 2.31.0
+- ✅ pyperclip >= 1.8.2
+- ✅ **Ollama (komplett automatisch, Silent-Installation)**
+- ✅ Test-Modell tinyllama:1.1b (~600 MB)
+
+#### Linux/macOS
+
+1. **Repository klonen**
+```bash
+cd ~/Documents
+git clone https://github.com/Nr44suessauer/Ki-whisperer.git
+cd Ki-whisperer
 ```
 
-### 4. Ollama starten
+2. **Installationsskript ausführen**
+```bash
+chmod +x install.sh
+./install.sh
+```
 
+**Das Skript installiert vollautomatisch:**
+- ✅ Python 3.8+ (falls nicht installiert)
+- ✅ Alle Python-Pakete (via pip)
+- ✅ **Ollama (komplett automatisch via offizielles Install-Script)**
+- ✅ Test-Modell tinyllama:1.1b
+- ✅ Erstellt start.sh zum einfachen Starten
+
+**Unterstützte Linux-Distributionen:**
+- Debian/Ubuntu (apt)
+- Fedora (dnf)
+- CentOS/RHEL (yum)
+- macOS (Homebrew)
+
+### Nach der Installation starten
+
+**Windows:**
 ```powershell
-ollama serve
+cd a1_terminal_modular
+.\start.bat
 ```
 
-Ollama läuft auf `http://localhost:11434`
+**Linux/macOS:**
+```bash
+cd a1_terminal_modular
+./start.sh
+```
 
 ---
 

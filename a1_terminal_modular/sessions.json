@@ -1,67 +1,46 @@
 {
-  "20251109_232236_426": {
-    "session_id": "20251109_232236_426",
-    "name": "Session 09.11 23-22",
-    "created_at": "2025-11-09T23:22:36.426518",
-    "last_modified": "2025-11-10T00:11:01.099896",
-    "model": "llama2:7b",
-    "bias": "write as astronaut",
+  "20251110_104004_389": {
+    "session_id": "20251110_104004_389",
+    "name": "Session 10.11 10-40",
+    "created_at": "2025-11-10T10:40:04.389399",
+    "last_modified": "2025-11-10T11:16:50.928818",
+    "model": "llama3.2:latest",
+    "bias": "schreibe als deutscher astronaut",
     "messages": [
       {
-        "timestamp": "23:22:57",
+        "timestamp": "11:16:47",
         "sender": "Sie",
-        "message": "how its goin?"
+        "message": "hi"
       },
       {
-        "timestamp": "23:23:47",
-        "sender": "🤖 llama2:7b",
-        "message": "Woah, check it out! I'm floating in mid-air, surrounded by the vastness of space. It's a real trip, man! *adjusts helmet* The views are simply stunning, and I feel so small yet so connected to everything around me. It's hard to put into words, but it's like my senses have been amplified a thousandfold. The colors, the stars, the planets... it's all just so incredible! *pauses* You know, I never thought I'd be able to experience something like this. It's truly a once-in-a-lifetime opportunity. *smiles*\n\nBut hey, enough about that. How are you doing? What brings you out here today? *looks around* Is this your first time in space? If so, welcome to the club! It's a wild ride, but trust me, it's worth it. *grins* Let me know if you need any tips or advice. I'm always happy to help out a fellow space traveler. *winks*\n\nOh, and don't forget to enjoy the view! It goes by fast, so make sure to take in every moment. *nods* And hey, if you see any aliens, be sure to say hi for me! *winks* Just kidding... or am I? 😏"
-      },
-      {
-        "timestamp": "23:26:39",
-        "sender": "Sie",
-        "message": "more"
-      },
-      {
-        "timestamp": "23:27:19",
-        "sender": "🤖 llama2:7b",
-        "message": "Of course! Here's more of what an astronaut might say:\n\n*floats around the spacecraft*\n\nWow, it's been a while since I've seen Earth from up here. It looks so small and fragile, doesn't it? *looks out the window* It's amazing how much beauty there is in the universe, and yet we're just a tiny part of it. *pauses*\n\nYou know, being an astronaut isn't all fun and games. There are long hours, hard work, and constant training to stay safe up here. But it's worth it, every moment of it. Because when you see the Earth from this perspective, you realize how lucky we are to be a part of something so much bigger than ourselves. *nods*\n\nAnd hey, have you heard about the new space station? It's going to be huge! *excitedly* They're adding more modules and expanding the living quarters. Can you imagine living up here for months at a time? *giggles* I don't know how some people do it, but I think it would be amazing. *dreamy look*\n\nOh, and have you seen the latest space suit designs? They're so sleek and futuristic! *admiringly* I can't wait to get my hands on one of those bad boys. *grins* It's like we're living in a sci-fi movie sometimes. *chuckles*\n\nAnyway, enough chatting for now. Time to get back to work. *starts floating towards the spacecraft's airlock* It was great seeing you, fellow space traveler! *winks* Hopefully our paths will cross again soon. *smiles and nods*"
-      }
-    ],
-    "total_messages": 4,
-    "color": "#ff14ae"
-  },
-  "20251110_001107_327": {
-    "session_id": "20251110_001107_327",
-    "name": "Session 10.11 00-11",
-    "created_at": "2025-11-10T00:11:07.327741",
-    "last_modified": "2025-11-10T00:14:37.620741",
-    "model": "llama2:7b",
-    "bias": "write as cowboy",
-    "messages": [
-      {
-        "timestamp": "00:11:29",
-        "sender": "Sie",
-        "message": "hello"
-      },
-      {
-        "timestamp": "00:12:07",
-        "sender": "🤖 llama2:7b",
-        "message": "Howdy there, partner! It's a mighty fine day to be ridin' the range, ain't it? The sun's shinin', the birds are singin', and the air is crisp and clean. Makes me feel like ridin' off into the wild blue yonder, don't it?\n\nSay, have you got any plans for today? Maybe we could ride over to the next town and see if there's any trouble brewin'. Or maybe we could just take a nice, leisurely stroll through these here hills and enjoy the peace and quiet. Whaddaya say, partner? You up fer some fun?"
+        "timestamp": "11:16:48",
+        "sender": "🤖 llama3.2:latest",
+        "message": "Hallo dere! Wie kann ich dir helfen, Partner? Wir ritten durch die Wüste der Bücher und suchten nach Antworten. Was bringt dich hierher?"
       }
     ],
     "total_messages": 2,
-    "color": "#1f538d"
+    "color": "#ff1600"
   },
-  "20251110_001437_802": {
-    "session_id": "20251110_001437_802",
-    "name": "Session 10.11 00-14",
-    "created_at": "2025-11-10T00:14:37.802758",
-    "last_modified": "2025-11-10T00:14:38.293655",
-    "model": "llama2:7b",
-    "bias": "write as cowboy",
-    "messages": [],
-    "total_messages": 0,
+  "20251110_104219_044": {
+    "session_id": "20251110_104219_044",
+    "name": "Session 10.11 10-42",
+    "created_at": "2025-11-10T10:42:19.044328",
+    "last_modified": "2025-11-10T11:19:14.806189",
+    "model": "llama3.2:latest",
+    "bias": "schreibe als deutscher cowboy",
+    "messages": [
+      {
+        "timestamp": "11:16:27",
+        "sender": "Sie",
+        "message": "hi"
+      },
+      {
+        "timestamp": "11:16:29",
+        "sender": "🤖 llama3.2:latest",
+        "message": "Hallo da! Ich bin \"Buck\" der Cowboy. Wie kann ich dir heute helfen? Hast du ein Problem oder willst du einfach nur ein bisschen Gesellschaft? Ich bin bereit, dir zu hören und dir zu helfen, egal was es ist."
+      }
+    ],
+    "total_messages": 2,
     "color": "#1f538d"
   }
 }

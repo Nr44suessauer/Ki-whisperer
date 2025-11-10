@@ -842,17 +842,57 @@ class A1Terminal:
             self.add_to_chat("System", "🗑️ Chat-Historie für AI-Model gelöscht - Frischer Kontext ab sofort")
 
     def load_session(self, session_id):
-        self._session_just_loaded = True
         """Lädt eine bestehende Session"""
         if session_id not in self.sessions:
             return False
-            
-        # Aktuelle Session wechseln
-        self.current_session_id = session_id
-        session_data = self.sessions[session_id]
         
-        # Chat leeren und Session-Nachrichten laden
+        # Wenn die Session bereits geladen ist, nichts tun
+        if self.current_session_id == session_id:
+            self.console_print(f"ℹ️ Session bereits aktiv: {session_id}", "info")
+            return True
+        
+        # WICHTIG: Flag setzen um zu verhindern, dass während des Ladevorgangs gespeichert wird
+        self._session_just_loaded = True
+        
+        self.console_print(f"🔄 Wechsle zu Session: {session_id}", "info")
+        
+        # WICHTIG: Session-ID SOFORT wechseln BEVOR irgendwas anderes passiert!
+        # Das verhindert, dass auto_save die alte Session mit neuen (leeren) Daten überschreibt
+        old_session_id = self.current_session_id
+        
+        # Alte Session speichern BEVOR Chat geleert wird und BEVOR Session-ID gewechselt wird
+        # Die Nachrichten müssen noch in chat_bubbles sein für das Speichern
+        if old_session_id and old_session_id != session_id:
+            # Speichern während chat_bubbles noch existieren und current_session_id noch die alte ist
+            if self.save_current_session():
+                self.console_print(f"💾 Alte Session gespeichert: {old_session_id}", "success")
+            else:
+                self.console_print(f"⚠️ Warnung: Konnte alte Session nicht speichern", "warning")
+        
+        # JETZT Session ID wechseln - KRITISCH: Muss VOR clear_chat passieren!
+        self.current_session_id = session_id
+        
+        # Session-Daten aus der Datei laden
+        session_name = self.sessions[session_id].get("name", "")
+        safe_name = "_".join(session_name.split()).replace("/", "_").replace("\\", "_")
+        session_file = os.path.join(self.sessions_dir, f"{safe_name}_session_{session_id}.json")
+        
+        try:
+            with open(session_file, 'r', encoding='utf-8') as f:
+                session_data = json.load(f)
+                # Aktualisiere auch das in-memory Dictionary
+                self.sessions[session_id] = session_data
+        except Exception as e:
+            self.console_print(f"⚠️ Fehler beim Laden der Session-Datei: {e}", "warning")
+            # Fallback auf in-memory Daten
+            session_data = self.sessions[session_id]
+        
+        # JETZT ERST Chat-Anzeige leeren (NACH Session-ID Wechsel!)
+        # Dadurch wird auto_save, falls es aufgerufen wird, die RICHTIGE (neue) Session speichern
         self.clear_chat_for_new_session()
+        
+        # Kleine Verzögerung für vollständiges Clearing
+        self.root.update()
         
         # Chat-Historie für LLM zurücksetzen und neu aufbauen
         self.chat_history = []
@@ -863,11 +903,22 @@ class A1Terminal:
             if hasattr(self, 'model_dropdown'):
                 self.model_dropdown.set_selected(self.current_model)
         
-        # BIAS setzen
+        # BIAS setzen - WICHTIG: VOR dem Laden der Nachrichten
         self.current_session_bias = session_data.get("bias", "")
         if hasattr(self, 'session_bias_entry'):
+            # Temporär Event-Handler deaktivieren um unnötige Saves zu vermeiden
+            self.session_bias_entry.unbind("<KeyRelease>")
+            self.session_bias_entry.unbind("<Button-1>")
+            
+            # BIAS-Text setzen
             self.session_bias_entry.delete("1.0", "end")
-            self.session_bias_entry.insert("1.0", self.current_session_bias)
+            if self.current_session_bias:
+                self.session_bias_entry.insert("1.0", self.current_session_bias)
+            
+            # Event-Handler wieder aktivieren
+            self.session_bias_entry.bind("<KeyRelease>", self.on_bias_text_changed)
+            self.session_bias_entry.bind("<Button-1>", self.on_bias_text_changed)
+        
         # BIAS-Info-Label aktualisieren
         self.update_bias_info_label()
         
@@ -890,24 +941,50 @@ class A1Terminal:
         
         # Layout nach dem Laden aller Nachrichten vollständig aktualisieren
         if message_count > 0:
+            # Mehrfaches Update für zuverlässiges Rendering
+            self.chat_display_frame.update()
             self.chat_display_frame.update_idletasks()
+            
+            # Parent Canvas Update
             if hasattr(self.chat_display_frame, '_parent_canvas'):
+                self.chat_display_frame._parent_canvas.update()
                 self.chat_display_frame._parent_canvas.update_idletasks()
-                # Scrollregion neu berechnen
-                self.chat_display_frame._parent_canvas.configure(scrollregion=self.chat_display_frame._parent_canvas.bbox("all"))
+                
+                # Scrollregion nur EINMAL aktualisieren - keine unnötigen mehrfachen Updates
+                self.root.after(300, lambda: self._update_scroll_region())
+        else:
+            # Auch für leere Sessions das Layout aktualisieren
+            if hasattr(self, 'chat_display_frame'):
+                self.chat_display_frame.update()
+                self.chat_display_frame.update_idletasks()
         
         # Debug-Info über wiederhergestellte Chat-Historie
         if self.chat_history:
             self.console_print(f"💬 Chat-Historie wiederhergestellt: {len(self.chat_history)} Nachrichten für LLM-Kontext", "success")
         
+        self.console_print(f"✅ Session geladen: {session_id} mit {message_count} sichtbaren Nachrichten", "success")
+        
         # UI aktualisieren
         self.update_current_session_display()
         
-        # Zur letzten Nachricht scrollen - mit längerer Verzögerung für vollständiges Layout
-        self.root.after(200, self.scroll_to_last_message)
+        # Zur letzten Nachricht scrollen - nur EINMAL mit Verzögerung
+        if message_count > 0:
+            self.root.after(300, self.scroll_to_last_message)
         
-        self.console_print(f"📂 Session geladen: {session_id}", "info")
+        # WICHTIG: Flag zurücksetzen NACH allen Operationen die speichern könnten
+        self._session_just_loaded = False
+        
         return True
+    
+    def _update_scroll_region(self):
+        """Hilfsmethode zum Aktualisieren der Scroll-Region"""
+        if hasattr(self, 'chat_display_frame') and hasattr(self.chat_display_frame, '_parent_canvas'):
+            try:
+                self.chat_display_frame._parent_canvas.configure(
+                    scrollregion=self.chat_display_frame._parent_canvas.bbox("all")
+                )
+            except:
+                pass
 
     def save_current_session(self):
         """Speichert die aktuelle Session"""
@@ -1734,6 +1811,10 @@ class A1Terminal:
         """Automatische BIAS-Speicherung"""
         if not hasattr(self, 'session_bias_entry'):
             return
+        
+        # WICHTIG: Nicht speichern während eine Session geladen wird
+        if getattr(self, '_session_just_loaded', False):
+            return
             
         bias_text = self.session_bias_entry.get("1.0", "end-1c").strip()
         old_bias = self.current_session_bias
@@ -1917,12 +1998,14 @@ class A1Terminal:
 
     def clear_chat_for_new_session(self):
         """Leert den Chat für eine neue Session"""
-        # Lösche alle Chat-Bubbles
+        # Lösche alle Chat-Bubbles gründlich
         if hasattr(self, 'chat_bubbles'):
             for bubble in self.chat_bubbles:
                 try:
+                    # Explizit pack_forget aufrufen vor destroy
+                    bubble.pack_forget()
                     bubble.destroy()
-                except:
+                except Exception as e:
                     pass
             self.chat_bubbles.clear()
         
@@ -1931,15 +2014,30 @@ class A1Terminal:
         self.message_history.clear()
         self.history_index = -1
         
-        # Layout vollständig aktualisieren nach dem Löschen
+        # Layout MEHRFACH und gründlich aktualisieren nach dem Löschen
         if hasattr(self, 'chat_display_frame'):
+            # Sofortiges Update
+            self.chat_display_frame.update()
             self.chat_display_frame.update_idletasks()
+            
             if hasattr(self.chat_display_frame, '_parent_canvas'):
+                # Canvas Update
+                self.chat_display_frame._parent_canvas.update()
                 self.chat_display_frame._parent_canvas.update_idletasks()
+                
                 # Scrollregion zurücksetzen
-                self.chat_display_frame._parent_canvas.configure(scrollregion=self.chat_display_frame._parent_canvas.bbox("all"))
+                try:
+                    self.chat_display_frame._parent_canvas.configure(
+                        scrollregion=self.chat_display_frame._parent_canvas.bbox("all")
+                    )
+                except:
+                    pass
+                
                 # Nach oben scrollen (für leere Chats)
-                self.chat_display_frame._parent_canvas.yview_moveto(0.0)
+                try:
+                    self.chat_display_frame._parent_canvas.yview_moveto(0.0)
+                except:
+                    pass
 
     def restore_chat_message(self, msg_data):
         """Stellt eine Chat-Nachricht aus Session-Daten wieder her"""
@@ -1961,6 +2059,9 @@ class A1Terminal:
         )
         
         self.chat_bubbles.append(bubble)
+        
+        # Sofortiges Layout-Update für jede Bubble
+        bubble.update_idletasks()
 
     # ============================================
     # ENDE SESSION MANAGEMENT SYSTEM  
@@ -2885,6 +2986,11 @@ class A1Terminal:
         if choice and choice != "Keine Modelle verfügbar":
             self.current_model = choice
             
+            # WICHTIG: Nicht speichern während eine Session geladen wird
+            if getattr(self, '_session_just_loaded', False):
+                # Session wird gerade geladen, nicht speichern
+                return
+            
             # Chat-Historie nur bei neuen/leeren Sessions zurücksetzen
             # Bei bestehenden Sessions mit Nachrichten die Historie beibehalten
             if not hasattr(self, 'chat_bubbles') or len(self.chat_bubbles) == 0:
@@ -3159,6 +3265,12 @@ class A1Terminal:
                             self.remove_last_message()
                             formatted_content = self.format_ai_response(full_response)
                             self.add_to_chat(f"🤖 {self.current_model}", formatted_content)
+                            
+                            # WICHTIG: Session SOFORT speichern nach AI-Antwort
+                            # Nicht warten auf auto_save_timer (200ms), sondern direkt speichern
+                            if self.current_session_id and self.current_session_id in self.sessions:
+                                if self.save_current_session():
+                                    self.console_print(f"💾 Session nach AI-Antwort gespeichert", "success")
                         
                         self.root.after(0, show_final_response)
                         
