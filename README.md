@@ -1,54 +1,106 @@
-# A1-Terminal
+# A1-Terminal# A1-Terminal
 
-**Professioneller Chat-Client für lokale AI-Modelle via Ollama**
 
-Version 2.0 - Modulare Architektur
 
-## 📁 Projektstruktur
+**Professioneller Chat-Client für lokale AI-Modelle via Ollama****Professioneller Chat-Client für lokale AI-Modelle via Ollama**
 
----
 
-Das Projekt ist jetzt **modular** aufgebaut:
 
-## 📋 Inhaltsverzeichnis
+Version 2.0 - Modulare ArchitekturVersion 2.0 - Modulare Architektur
 
-```
 
-1. [Überblick](#überblick)Ki-whisperer/
 
-2. [System-Architektur](#system-architektur)├── a1_terminal_modular/     # ✨ NEUE MODULARE VERSION (empfohlen)
+---## 📁 Projektstruktur
+
+
+
+## 📖 Dokumentation---
+
+
+
+Die vollständige technische Dokumentation finden Sie hier:Das Projekt ist jetzt **modular** aufgebaut:
+
+
+
+**➡️ [DOKUMENTATION.md](./DOKUMENTATION.md)**## 📋 Inhaltsverzeichnis
+
+
+
+---```
+
+
+
+## 🚀 Schnellstart1. [Überblick](#überblick)Ki-whisperer/
+
+
+
+### 1. Ollama installieren2. [System-Architektur](#system-architektur)├── a1_terminal_modular/     # ✨ NEUE MODULARE VERSION (empfohlen)
+
+Besuchen Sie [ollama.ai](https://ollama.ai) und installieren Sie Ollama.
 
 3. [Installation](#installation)│   ├── start.bat            # Einfach doppelklicken zum Starten!
 
-4. [Schnellstart](#schnellstart)│   ├── main.py
+### 2. Dependencies installieren
 
-5. [Modulare Struktur](#modulare-struktur)│   └── src/
+```powershell4. [Schnellstart](#schnellstart)│   ├── main.py
+
+cd a1_terminal_modular
+
+pip install -r requirements.txt5. [Modulare Struktur](#modulare-struktur)│   └── src/
+
+```
 
 6. [Technische Dokumentation](#technische-dokumentation)│       ├── ui/              # UI-Komponenten
 
-7. [Features](#features)│       └── core/            # Kernlogik
+### 3. Starten
 
-8. [Konfiguration](#konfiguration)│
+```powershell7. [Features](#features)│       └── core/            # Kernlogik
 
-9. [API-Referenz](#api-referenz)└── OLD_VERSION/             # Archivierte alte Version
+.\start.bat
 
-10. [Performance & Monitoring](#performance--monitoring)    └── llm_messenger.py     # Original monolithische Datei
-
-11. [Troubleshooting](#troubleshooting)```
+```8. [Konfiguration](#konfiguration)│
 
 
 
----## Installation
+oder9. [API-Referenz](#api-referenz)└── OLD_VERSION/             # Archivierte alte Version
 
 
 
-## Überblick1. **Repository klonen oder herunterladen**
+```powershell10. [Performance & Monitoring](#performance--monitoring)    └── llm_messenger.py     # Original monolithische Datei
 
-   ```bash
+python main.py
+
+```11. [Troubleshooting](#troubleshooting)```
+
+
+
+---
+
+
+
+## ✨ Features---## Installation
+
+
+
+- 🎯 Modulare Architektur
+
+- 🚀 Echtzeit-Streaming
+
+- 💾 Session-Management## Überblick1. **Repository klonen oder herunterladen**
+
+- 🎨 Vollständig anpassbar
+
+- 📊 Model-Management   ```bash
+
+- 🔄 Offline-fähig
 
 **A1-Terminal** ist ein moderner, modularer Chat-Client für lokale AI-Modelle, der über die Ollama-API kommuniziert. Die Anwendung bietet eine intuitive GUI mit umfangreichen Anpassungsmöglichkeiten, Session-Management und Echtzeit-Streaming-Funktionalität.   cd "C:\Users\marcn\Documents\Ki-whisperer"
 
+---
+
    ```
+
+Weitere Informationen, API-Referenz, Troubleshooting und mehr in der **[vollständigen Dokumentation](./DOKUMENTATION.md)**.
 
 ### Hauptmerkmale
 
