@@ -73,38 +73,17 @@ class ChatBubble(ctk.CTkFrame):
         )
         self.copy_btn.pack(side="right")
         
-        # Nachrichteninhalt - CTkTextbox mit optimierter Höhenberechnung
+        # Nachrichteninhalt - CTkTextbox mit dynamischer Höhenberechnung
         message_font = (font, font_size)
         
-        # Berechne die benötigte Höhe realistisch basierend auf Textinhalt
-        chars_per_line = 70
-        
-        # Analysiere jede Zeile einzeln für genauere Schätzung
-        lines = message.split('\n')
-        actual_lines = 0
-        for line in lines:
-            if len(line.strip()) == 0:  # Leere Zeile
-                actual_lines += 1
-            else:
-                # Berechne Umbrüche für diese Zeile
-                line_wraps = max(1, len(line) // chars_per_line)
-                actual_lines += line_wraps
-        
-        # Berechne Höhe mit optimiertem Puffer
-        line_height = font_size + 3  # Noch kompakter
-        calculated_height = actual_lines * line_height + 25  # Minimaler Puffer
-        
-        # Minimum 60px, Maximum 350px für sehr lange Nachrichten  
-        calculated_height = max(min(calculated_height, 350), 60)
-        
-        # Erstelle Textbox mit ausreichender Höhe (kein Scrolling nötig)
+        # Erstelle Textbox mit initialer Minimalhöhe
         self.message_label = ctk.CTkTextbox(
             self,
             wrap="word",
             font=message_font,
             text_color=text_color,
             fg_color="transparent",
-            height=calculated_height
+            height=60  # Initiale Minimalhöhe
         )
         self.message_label.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         
@@ -112,50 +91,88 @@ class ChatBubble(ctk.CTkFrame):
         self.message_label.insert("1.0", message)
         self.message_label.configure(state="disabled")
         
-        # Nach dem Rendering: Stelle sicher, dass die Höhe ausreicht
-        self.after(50, self.ensure_full_content_visible)
+        # Nach dem Rendering: Passe Höhe automatisch an den gesamten Inhalt an
+        self.after(10, self.adjust_height_to_content)
         
         # Packe Bubble mit korrekter Ausrichtung
         self.pack(fill="x", padx=20 if anchor == "e" else 5, 
                  pady=5, anchor=anchor)
     
-    def ensure_full_content_visible(self):
-        """Stellt sicher, dass der gesamte Inhalt ohne Scrolling sichtbar ist"""
+    def adjust_height_to_content(self):
+        """Passt die Höhe der Textbox dynamisch an den gesamten Inhalt an - kein Scrollen nötig"""
         try:
+            # Warte bis Widget vollständig gerendert ist
+            self.update_idletasks()
+            
             # Aktiviere temporär für Messungen
             self.message_label.configure(state="normal")
             
-            # Hole die aktuelle Textbox-Höhe und prüfe, ob Scrolling nötig ist
-            self.message_label.see("end")  # Gehe zum Ende
+            # Hole die aktuelle Schriftgröße und Font
+            if self.sender == "Sie":
+                font_size = self.app_config.get("user_font_size", 11)
+                font_name = self.app_config.get("user_font", "Courier New")
+            elif "🤖" in self.sender:
+                font_size = self.app_config.get("ai_font_size", 11)
+                font_name = self.app_config.get("ai_font", "Consolas")
+            else:
+                font_size = self.app_config.get("system_font_size", 10)
+                font_name = self.app_config.get("system_font", "Arial")
             
-            # Messe die tatsächlich benötigte Höhe - optimiert
-            try:
-                total_lines = int(self.message_label.index('end-1c').split('.')[0])
-                font_size = self.app_config.get("ai_font_size" if "🤖" in self.sender 
-                                               else "system_font_size" if self.sender == "System"
-                                               else "user_font_size", 11)
-                
-                # Optimierte, kompaktere Berechnung
-                needed_height = total_lines * (font_size + 3) + 25  # Minimaler Puffer
-                current_height = self.message_label.cget("height")
-                
-                # Maximale Höhe begrenzen und nur erweitern wenn wirklich nötig
-                max_height = 350  # Reduzierte maximale Bubble-Höhe
-                needed_height = min(needed_height, max_height)
-                
-                # Nur erweitern wenn deutlich mehr Höhe benötigt wird (Toleranz: 20px)
-                if needed_height > current_height + 20:
-                    self.message_label.configure(height=needed_height)
-                    
-            except Exception as e:
-                # Falls Messung fehlschlägt, behalte aktuelle Höhe
-                print(f"Höhenmessung fehlgeschlagen: {e}")
-                
+            # Hole die aktuelle Breite der Textbox in Pixeln
+            textbox_width = self.message_label.winfo_width()
+            
+            # Falls Breite noch nicht bekannt (Widget nicht gerendert), verwende Standardwert
+            if textbox_width <= 1:
+                textbox_width = 600  # Schätzwert, wird beim nächsten Update korrigiert
+                # Plane erneute Anpassung nach vollständigem Rendering
+                self.after(100, self.adjust_height_to_content)
+            
+            # Berechne durchschnittliche Zeichenbreite basierend auf Font
+            # Monospace-Fonts haben feste Breite, andere variabel
+            if font_name in ["Courier New", "Consolas", "Courier"]:
+                char_width = font_size * 0.6  # Monospace
+            else:
+                char_width = font_size * 0.5  # Proportionale Schrift (etwas kleiner für mehr Genauigkeit)
+            
+            # Berechne Zeichen pro Zeile basierend auf Textbox-Breite (minus Padding)
+            usable_width = textbox_width - 20  # Reduziertes Padding für genauere Berechnung
+            chars_per_line = max(20, int(usable_width / char_width))
+            
+            # Analysiere den Text und zähle die tatsächlichen Zeilen nach Umbruch
+            lines = self.message.split('\n')
+            total_wrapped_lines = 0
+            
+            for line in lines:
+                if len(line) == 0:
+                    # Leere Zeile (Absatz) - zählt als volle Zeile für Spacing
+                    total_wrapped_lines += 1
+                else:
+                    # Berechne wie viele Zeilen diese Zeile nach Umbruch benötigt
+                    line_length = len(line)
+                    wrapped_lines = max(1, (line_length + chars_per_line - 1) // chars_per_line)
+                    total_wrapped_lines += wrapped_lines
+            
+            # Berechne die benötigte Höhe - präziser für CTkTextbox
+            line_height = font_size + 3  # Etwas mehr Zeilenabstand für bessere Lesbarkeit
+            # CTkTextbox hat intern ca. 12px Padding
+            needed_height = total_wrapped_lines * line_height + 12
+            
+            # Setze Mindesthöhe von 50px
+            needed_height = max(needed_height, 50)
+            
+            # Aktualisiere die Höhe der Textbox
+            self.message_label.configure(height=needed_height)
+            
             # Deaktiviere wieder
             self.message_label.configure(state="disabled")
             
         except Exception as e:
-            print(f"Vollständige Sichtbarkeit konnte nicht sichergestellt werden: {e}")
+            print(f"Fehler bei automatischer Höhenanpassung: {e}")
+            # Bei Fehler: Deaktiviere trotzdem die Textbox
+            try:
+                self.message_label.configure(state="disabled")
+            except:
+                pass
     
     def update_style(self, new_config):
         """Aktualisiert das Bubble-Styling basierend auf neuer Konfiguration"""
@@ -233,14 +250,14 @@ class ChatBubble(ctk.CTkFrame):
             line_height = font_size + 3  # Kompakter Zeilenabstand
             new_height = actual_lines * line_height + 25  # Minimaler Puffer
             
-            # Minimum 60px, Maximum 350px
-            new_height = max(min(new_height, 350), 60)
+            # Minimum 60px, keine Maximalbegrenzung mehr
+            new_height = max(new_height, 60)
             
             # Aktualisiere die Höhe
             self.message_label.configure(height=new_height)
             
             # Nach kurzer Zeit exakte Nachmessung
-            self.after(25, self.ensure_full_content_visible)
+            self.after(25, self.adjust_height_to_content)
             
         except Exception as e:
             print(f"Höhenneuberechnung fehlgeschlagen: {e}")

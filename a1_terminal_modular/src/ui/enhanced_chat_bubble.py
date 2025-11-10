@@ -106,25 +106,22 @@ class EnhancedChatBubble(ctk.CTkFrame):
         # Message Content
         message_font = (font, font_size)
         
-        # Berechne Höhe
-        chars_per_line = 80
-        lines = message.split('\n')
-        actual_lines = sum(max(1, len(line) // chars_per_line) for line in lines)
-        line_height = font_size + 4
-        calculated_height = max(60, min(400, actual_lines * line_height + 30))
-        
+        # Erstelle Textbox mit initialer Minimalhöhe
         self.text_widget = ctk.CTkTextbox(
             main_container,
             font=message_font,
             text_color=text_color,
             fg_color="transparent",
             wrap="word",
-            height=calculated_height,
+            height=60,  # Initiale Minimalhöhe
             activate_scrollbars=False
         )
         self.text_widget.pack(fill="both", expand=True)
         self.text_widget.insert("1.0", message)
         self.text_widget.configure(state="disabled")
+        
+        # Nach dem Rendering: Passe Höhe automatisch an den gesamten Inhalt an
+        self.after(10, self.adjust_height_to_content)
         
         # Hover-Effekte
         self.bind("<Enter>", self._on_enter)
@@ -135,6 +132,82 @@ class EnhancedChatBubble(ctk.CTkFrame):
         header_frame.bind("<Leave>", self._on_leave)
         self.text_widget.bind("<Enter>", self._on_enter)
         self.text_widget.bind("<Leave>", self._on_leave)
+    
+    def adjust_height_to_content(self):
+        """Passt die Höhe der Textbox dynamisch an den gesamten Inhalt an - kein Scrollen nötig"""
+        try:
+            # Warte bis Widget vollständig gerendert ist
+            self.update_idletasks()
+            
+            # Aktiviere temporär für Messungen
+            self.text_widget.configure(state="normal")
+            
+            # Hole die aktuelle Schriftgröße und Font
+            if self.is_user:
+                font_size = self.app_config.get("user_font_size", 11)
+                font_name = self.app_config.get("user_font", "Arial")
+            elif "🤖" in self.sender:
+                font_size = self.app_config.get("ai_font_size", 11)
+                font_name = self.app_config.get("ai_font", "Arial")
+            else:
+                font_size = self.app_config.get("system_font_size", 9)
+                font_name = self.app_config.get("system_font", "Arial")
+            
+            # Hole die aktuelle Breite der Textbox in Pixeln
+            textbox_width = self.text_widget.winfo_width()
+            
+            # Falls Breite noch nicht bekannt (Widget nicht gerendert), verwende Standardwert
+            if textbox_width <= 1:
+                textbox_width = 600  # Schätzwert, wird beim nächsten Update korrigiert
+                # Plane erneute Anpassung nach vollständigem Rendering
+                self.after(100, self.adjust_height_to_content)
+            
+            # Berechne durchschnittliche Zeichenbreite basierend auf Font
+            # Monospace-Fonts haben feste Breite, andere variabel
+            if font_name in ["Courier New", "Consolas", "Courier"]:
+                char_width = font_size * 0.6  # Monospace
+            else:
+                char_width = font_size * 0.5  # Proportionale Schrift (etwas kleiner für mehr Genauigkeit)
+            
+            # Berechne Zeichen pro Zeile basierend auf Textbox-Breite (minus Padding)
+            usable_width = textbox_width - 20  # Reduziertes Padding für genauere Berechnung
+            chars_per_line = max(20, int(usable_width / char_width))
+            
+            # Analysiere den Text und zähle die tatsächlichen Zeilen nach Umbruch
+            lines = self.message.split('\n')
+            total_wrapped_lines = 0
+            
+            for line in lines:
+                if len(line) == 0:
+                    # Leere Zeile (Absatz) - zählt als volle Zeile für Spacing
+                    total_wrapped_lines += 1
+                else:
+                    # Berechne wie viele Zeilen diese Zeile nach Umbruch benötigt
+                    line_length = len(line)
+                    wrapped_lines = max(1, (line_length + chars_per_line - 1) // chars_per_line)
+                    total_wrapped_lines += wrapped_lines
+            
+            # Berechne die benötigte Höhe - präziser für CTkTextbox
+            line_height = font_size + 3  # Etwas mehr Zeilenabstand für bessere Lesbarkeit
+            # CTkTextbox hat intern ca. 12px Padding
+            needed_height = total_wrapped_lines * line_height + 12
+            
+            # Setze Mindesthöhe von 50px
+            needed_height = max(needed_height, 50)
+            
+            # Aktualisiere die Höhe der Textbox
+            self.text_widget.configure(height=needed_height)
+            
+            # Deaktiviere wieder
+            self.text_widget.configure(state="disabled")
+            
+        except Exception as e:
+            print(f"Fehler bei automatischer Höhenanpassung: {e}")
+            # Bei Fehler: Deaktiviere trotzdem die Textbox
+            try:
+                self.text_widget.configure(state="disabled")
+            except:
+                pass
     
     def _on_enter(self, event):
         """Zeige Action-Buttons bei Hover"""
