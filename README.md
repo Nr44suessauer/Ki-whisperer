@@ -115,6 +115,30 @@ After installation, **tinyllama:1.1b** is already installed. You can download mo
 
 ---
 
+## 🎮 GPU/CUDA Support (Optional)
+
+**A1-Terminal automatically uses your NVIDIA GPU if available - no code changes needed!**
+
+### Benefits with CUDA:
+- ⚡ **Much faster inference** - Models respond 5-10x faster
+- 🚀 **Larger models** - Run 13B+ models smoothly
+- 💾 **Less RAM usage** - GPU VRAM is used instead of system RAM
+
+### Setup:
+
+1. **Install NVIDIA GPU drivers** from [nvidia.com/drivers](https://www.nvidia.com/drivers)
+2. **That's it!** Ollama automatically detects and uses your GPU
+
+### Verify GPU usage:
+```powershell
+# Check if GPU is being used (run while model is active)
+nvidia-smi
+```
+
+**No configuration needed in A1-Terminal** - Ollama handles everything automatically! 🎉
+
+---
+
 ## 🔧 System Requirements
 
 **Minimum:**
