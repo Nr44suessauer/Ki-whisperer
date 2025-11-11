@@ -116,12 +116,13 @@ echo [3/4] Python-Pakete installieren...
 echo ========================================================================
 echo.
 
-REM Wechsle in das Projektverzeichnis
-cd /d "%~dp0a1_terminal_modular"
+REM Wechsle in das Projektverzeichnis (vom scripts-Ordner aus)
+cd /d "%~dp0..\a1_terminal_modular"
 
 if not exist "requirements.txt" (
     echo [FEHLER] requirements.txt nicht gefunden!
-    echo Bitte stellen Sie sicher, dass sich dieses Skript im Hauptverzeichnis befindet.
+    echo Aktuelles Verzeichnis: %CD%
+    echo Bitte stellen Sie sicher, dass die Ordnerstruktur korrekt ist.
     pause
     exit /b 1
 )
@@ -279,10 +280,10 @@ echo   A1-Terminal ist bereit!
 echo ========================================================================
 echo.
 echo Starten Sie die Anwendung mit:
-echo   - Doppelklick auf: a1_terminal_modular\start.bat
+echo   - Doppelklick auf: start.bat (im Hauptverzeichnis)
 echo   - Oder: cd a1_terminal_modular ^&^& python main.py
 echo.
-echo Weitere Informationen finden Sie in der DOKUMENTATION.md
+echo Weitere Informationen finden Sie in der README.md
 echo.
 echo ========================================================================
 pause
