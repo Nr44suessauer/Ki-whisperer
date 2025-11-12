@@ -7,87 +7,77 @@
 # ========================================
 # Colors for chat bubbles (Hex codes)
 bubble_colors:
-  bubble_colors: "{'ai_bg_color': '#1E3A5F', 'ai_text_color': 'white', 'system_bg_color': '#722F37', 'system_text_color': 'white', 'user_bg_color': '#003300', 'user_text_color': '#00FF00'}"
+  user_bg_color: "#003300"  # You
+  user_text_color: "#00FF00"  # You
   ai_bg_color: "#1E3A5F"  # AI Model
   ai_text_color: "white"  # AI Model
   system_bg_color: "#722F37"  # System Messages
   system_text_color: "white"  # System Messages
-  ui_accent_color: "#2B8A3E"
   ui_bg_color: "#1a1a1a"
-  ui_border_color: "#3a3a3a"
   ui_fg_color: "#2b2b2b"
+  ui_accent_color: "#2B8A3E"
   ui_hover_color: "#37A24B"
   ui_text_color: "white"
-  user_bg_color: "#003E00"  # You
-  user_text_color: "#00FF00"  # You
+  ui_border_color: "#3a3a3a"
 # Terminal/Console Output Styling
 console:
-  console: "None"
 
 # Flat structure for compatibility (automatically generated)
 ai_bg_color: '#1E3A5F'
 ai_font: Consolas
-ai_font_size: 15
+ai_font_size: 12
 ai_text_color: white
 auto_scroll_chat: true
-bubble_colors:
-  ai_bg_color: '#1E3A5F'
-  ai_text_color: white
-  system_bg_color: '#722F37'
-  system_text_color: white
-  user_bg_color: '#003300'
-  user_text_color: '#00FF00'
-compact_mode: true
-console: null
-show_system_messages: false
+compact_mode: false
+show_system_messages: true
 show_timestamps: true
 system_bg_color: '#722F37'
 system_font: Arial
-system_font_size: 10
+system_font_size: 11
 system_text_color: white
 ui_accent_color: '#2B8A3E'
 ui_bg_color: '#1a1a1a'
 ui_bias_font_size: 9
-ui_bias_height: 60
+ui_bias_height: 69
 ui_border_color: '#3a3a3a'
-ui_button_height: 60
-ui_button_width: 150
-ui_chat_bubble_corner_radius: 20
-ui_chat_bubble_padding_x: 30
-ui_chat_bubble_padding_y: 30
+ui_button_height: 46
+ui_button_width: 114
+ui_chat_bubble_corner_radius: 11
+ui_chat_bubble_padding_x: 17
+ui_chat_bubble_padding_y: 11
 ui_chat_max_width_ratio: 0.8
-ui_chat_spacing: 30
+ui_chat_spacing: 11
 ui_config_entry_width: 200
 ui_config_label_width: 200
 ui_config_slider_width: 300
 ui_debug_button_font: 9
-ui_debug_button_height: 30
+ui_debug_button_height: 34
 ui_fg_color: '#2b2b2b'
 ui_hover_color: '#37A24B'
-ui_input_font_size: 18
-ui_input_height: 60
-ui_model_button_size: 35
-ui_model_dropdown_height: 32
-ui_model_font_size: 11
+ui_input_font_size: 13
+ui_input_height: 46
+ui_model_button_size: 40
+ui_model_dropdown_height: 36
+ui_model_font_size: 12
 ui_model_label_size: 9
-ui_model_title_size: 12
+ui_model_title_size: 13
 ui_padding_content: 5
-ui_padding_main: 10
+ui_padding_main: 11
 ui_scrollbar_corner_radius: 6
 ui_scrollbar_width: 12
 ui_session_button_font: 9
-ui_session_button_height: 25
-ui_session_button_width: 140
-ui_session_font_size: 11
-ui_session_item_height: 60
-ui_session_panel_width: 884
+ui_session_button_height: 28
+ui_session_button_width: 161
+ui_session_font_size: 12
+ui_session_item_height: 69
+ui_session_panel_width: 402
 ui_session_spacing: 5
-ui_tab_font_size: 13
+ui_tab_font_size: 14
 ui_tab_height: 40
 ui_text_color: white
-ui_window_height: 900
-ui_window_width: 1463
-user_bg_color: '#003E00'
+ui_window_height: 950
+ui_window_width: 1500
+user_bg_color: '#003300'
 user_font: Courier New
-user_font_size: 15
+user_font_size: 12
 user_text_color: '#00FF00'
